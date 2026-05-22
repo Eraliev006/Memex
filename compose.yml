@@ -1,0 +1,65 @@
+services:
+
+  db:
+    image: postgres:18
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    volumes:
+      - app-db-data:/var/lib/postgresql/data/pgdata
+    env_file:
+      - .env
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
+      - POSTGRES_USER=${POSTGRES_USER?Variable not set}
+      - POSTGRES_DB=${POSTGRES_DB?Variable not set}
+  
+  backend:
+    image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
+    restart: always
+    networks:
+      - default
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+      # prestart: 
+      #   condition: service_completed_successfully
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    environment:
+      - ENVIRONMENT=local
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - QDRANT_HOST=qdrant
+      - POSTGRES_SERVER=db
+      - POSTGRES_DB=${POSTGRES_DB-memex_db}
+      - POSTGRES_USER=${POSTGRES_USER-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
+      - REDIS_HOST=redis
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health-check/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  redis:
+    image: redis:7-alpine
+    restart: always
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    restart: always
+    volumes:
+    - qdrant-data:/qdrant/storage
+
+
+volumes:
+  app-db-data:
+  qdrant-data:
