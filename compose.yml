@@ -31,8 +31,10 @@ services:
       # prestart: 
       #   condition: service_completed_successfully
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./backend/Dockerfile
+    ports:
+      - "8000:8000"
     env_file:
       - .env
     environment:
@@ -56,6 +58,8 @@ services:
   qdrant:
     image: qdrant/qdrant:latest
     restart: always
+    ports:
+      - "6333:6333"
     volumes:
     - qdrant-data:/qdrant/storage
 
