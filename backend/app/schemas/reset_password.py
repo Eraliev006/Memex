@@ -1,14 +1,9 @@
 
-
 from pydantic import BaseModel
 
-
-class PasswordResetBase(BaseModel):
+class ResetPasswordRequest(BaseModel):
     new_password:str
-    
-    
-class ResetPasswordRequest(PasswordResetBase):
-    pass
+    token: str
 
-class ResetPasswordResponse(PasswordResetBase):
-    pass
+class ResetPasswordResponse(BaseModel):
+    message: str
