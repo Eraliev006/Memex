@@ -2,8 +2,9 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.user import UserRepository
-from app.schemas.auth_schemas import TokenResponse
+from app.schemas.auth_schemas import LoginWithPasswordRequest, TokenResponse
 from app.schemas.user import UserCreate
+from app.schemas.reset_password import ResetPasswordRequest
 
 from .utils import verify_password_reset_token
 from app.core import security
@@ -12,7 +13,7 @@ class AuthService:
     def __init__(self, db: AsyncSession):
         self._repo = UserRepository(db)
         
-    async def login_with_password(self, email: str, password: str) -> TokenResponse:
+    async def login_with_password(self, data: LoginWithPasswordRequest) -> TokenResponse:
         """_summary_
 
         Args:
@@ -25,6 +26,8 @@ class AuthService:
         Returns:
             TokenResponse: return tokens pair(access/refresh token)
         """
+        email = data.email
+        password = data.password
         user = await self._repo.get_by_email(email=email)
         
         if not user:
@@ -48,7 +51,10 @@ class AuthService:
         )
     
             
-    async def reset_password(self, token: str, new_password: str) -> None:
+    async def reset_password(self, data: ResetPasswordRequest) -> None:
+        token = data.token
+        new_password = data.new_password
+        
         email = verify_password_reset_token(token)
         if not email:
             raise HTTPException(status_code=400, detail="Invalid or expired token")
