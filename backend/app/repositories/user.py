@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.app.models.user import User
+from app.models.user import User
+from app.schemas import UserCreate
 from sqlalchemy import select
 
 
@@ -35,5 +36,25 @@ class UserRepository:
         self.db.add(user)
         await self.db.commit()
         await self.db.refresh(user)
+        
+    async def create_user(self, user_in: UserCreate, hashed_password: str) -> User:
+        """create user in db
+
+        Args:
+            user (UserCreate): get user schemas for create
+            hashed_password (str): get already hashed password and save
+
+        Returns:
+            User: return User object
+        """
+        user_data = user_in.model_dump(exclude={'password'})
+        
+        db_user = User(**user_data, hashed_password=hashed_password)
+        self.db.add(db_user)
+        await self.db.commit()
+        await self.db.refresh(db_user)
+        
+        return db_user
+        
         
     
