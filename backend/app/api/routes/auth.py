@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Query
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api.deps import AuthServiceDep
-from app.schemas.user import UserCreate
+from app.schemas.user import UserCreate, UserResponse
 from app.schemas.reset_password import ResetPasswordRequest, ResetPasswordResponse
 from app.schemas.auth_schemas import LoginWithPasswordRequest, TokenResponse
 
@@ -25,7 +25,7 @@ async def login(
         password=form_data.password
     ))
     
-@router.post('/register', status_code=201, response_model=TokenResponse)
+@router.post('/register', status_code=201, response_model=UserResponse)
 async def register(
     user: UserCreate,
     auth_service: AuthServiceDep):
