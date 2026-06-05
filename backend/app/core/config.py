@@ -51,6 +51,8 @@ class Settings(BaseSettings):
     S3_ACCESS_KEY: str
     S3_SECRET_KEY: str
     
+    LLAMA_CLOUD_API_KEY: str
+    
     
     
     @computed_field  # type: ignore[prop-decorator]
