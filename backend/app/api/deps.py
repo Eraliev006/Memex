@@ -68,7 +68,10 @@ async def get_current_user(db: SessionDep, token: TokenDep):
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
         )
         user_id: str = payload.get("sub") # type: ignore
+        token_type: str = payload.get("type") # type: ignore
         if user_id is None:
+            raise credentials_exception
+        if token_type != "access":
             raise credentials_exception
         token_data = TokenData(sub=user_id)
     except jwt.InvalidTokenError:
