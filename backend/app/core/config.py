@@ -45,6 +45,13 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str = ""
     POSTGRES_DB: str = ""
+
+    S3_BUCKET_NAME: str
+    S3_ENDPOINT_URL: str = "http://localhost:9000"
+    S3_ACCESS_KEY: str
+    S3_SECRET_KEY: str
+    
+    
     
     @computed_field  # type: ignore[prop-decorator]
     @property
