@@ -53,6 +53,8 @@ class Settings(BaseSettings):
     
     LLAMA_CLOUD_API_KEY: str
     
+    REDIS_HOST: str = 'localhost'
+    
     
     
     @computed_field  # type: ignore[prop-decorator]
