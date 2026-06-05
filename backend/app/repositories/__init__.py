@@ -1,3 +1,5 @@
-from .user import User
+from .user import UserRepository
+from .document import DocumentRepository
 
-__all__ = ['User']
+
+__all__ = ['UserRepository', 'DocumentRepository']

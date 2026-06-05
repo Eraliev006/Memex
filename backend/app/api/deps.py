@@ -13,6 +13,7 @@ from typing import Annotated, Any, AsyncGenerator
 
 from app.services import AuthService, DocumentService
 from app.models.user import User
+from app.services.s3 import S3Storage
 
 
 @dataclass
@@ -24,6 +25,7 @@ async_session_maker = async_sessionmaker(
     expire_on_commit=False
 )
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+_s3_storage_instance = S3Storage()
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with async_session_maker() as session:
@@ -41,9 +43,14 @@ AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 
 
 
+# S3 SERVICE DI
+async def get_s3_storage() -> S3Storage:
+    return _s3_storage_instance
+
+
 # DOCUMENT SERVICE DI
 async def get_document_service(db: SessionDep) -> DocumentService:
-    return DocumentService(db)
+    return DocumentService(db, _s3_storage_instance)
 DocumentServiceDep = Annotated[DocumentService, Depends(get_document_service)]
 
 
