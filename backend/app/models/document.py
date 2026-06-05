@@ -8,11 +8,13 @@ import uuid
 from sqlalchemy import UUID, Enum, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.models.base import Base
+
 if TYPE_CHECKING:
     from .user import User
 
 
-class Document:
+class Document(Base):
     __tablename__ = 'documents'
     
     class Statuses(enum.Enum):
@@ -27,7 +29,7 @@ class Document:
     original_filename: Mapped[str] = mapped_column(nullable=False)
     storage_path: Mapped[str] = mapped_column(nullable=False)
     content: Mapped[str | None]
-    status: Mapped[Statuses] = mapped_column(Enum)
+    status: Mapped[Statuses] = mapped_column(Enum(Statuses, name="document_statuses"))    
     created_at: Mapped[datetime] = mapped_column(server_default=func.now(),nullable=False)
     
     
