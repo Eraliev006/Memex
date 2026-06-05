@@ -14,5 +14,5 @@ class UserCreate(UserBase):
     
 class UserResponse(UserBase):
     id: uuid.UUID
-    create_at: datetime
+    created_at: datetime
     
