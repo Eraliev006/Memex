@@ -1,11 +1,15 @@
+from typing import TYPE_CHECKING
 import uuid
 
 from datetime import datetime
 
 from sqlalchemy import UUID, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
+
+if TYPE_CHECKING:
+    from .document import Document
 
 class User(Base):
     __tablename__ = "users"
@@ -15,3 +19,5 @@ class User(Base):
     email: Mapped[str] = mapped_column(unique=True, index=True, nullable=False)
     hashed_password: Mapped[str] = mapped_column(nullable=False)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now(),nullable=False)
+    
+    documents: Mapped['Document'] = relationship(back_populates='user')
