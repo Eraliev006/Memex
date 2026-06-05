@@ -1,44 +1,30 @@
 
 from datetime import datetime
-import enum
 import uuid
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
-class Statuses(enum.Enum):
-    ready = 'ready'
-    processing = 'processing'
-    pending = 'pending'
-    failed = 'failed'
-
-
+from app.enums.document import DocumentStatuses
 class DocumentBase(BaseModel):
     title: str
     storage_path: str
-    status: Statuses
+    status: DocumentStatuses
 
 class DocumentCreate(DocumentBase):
     original_filename: str
     
-    class Config:
-        use_enum_values = True
+    model_config = ConfigDict(use_enum_values=True)
     
 class DocumentResponse(DocumentBase):
     id: uuid.UUID
     original_filename: str
     user_id: uuid.UUID
-    status: str
+    status: DocumentStatuses
     created_at: datetime
     
-    @field_validator("status", mode="before")
-    @classmethod
-    def serialize_enum(cls, v):
-        if hasattr(v, "value"):
-            return v.value
-        return v
-
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class DocumentUpdate(BaseModel):
-    content: str
+    content: str | None = None
+    title: str | None = None
+    status: DocumentStatuses | None = None
