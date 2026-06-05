@@ -56,6 +56,37 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  celery_worker:
+    image: '${DOCKER_IMAGE_BACKEND?Variable not set}:${TAG-latest}'
+    restart: always
+    networks:
+      - default
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    build:
+      context: .
+      dockerfile: ./backend/Dockerfile
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+    environment:
+      - ENVIRONMENT=local
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - LLAMA_CLOUD_API_KEY=${LLAMA_CLOUD_API_KEY}
+      - QDRANT_HOST=qdrant
+      - POSTGRES_SERVER=db
+      - POSTGRES_DB=${POSTGRES_DB-memex_db}
+      - POSTGRES_USER=${POSTGRES_USER-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD?Variable not set}
+    command: uv run celery -A app.core.celery_app worker --loglevel=info --concurrency=2
+
+
   redis:
     image: redis:7-alpine
     restart: always
