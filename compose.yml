@@ -44,7 +44,7 @@ services:
       - /app/.venv
     environment:
       - ENVIRONMENT=local
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - LLAMA_CLOUD_API_KEY=${LLAMA_CLOUD_API_KEY}
       - QDRANT_HOST=qdrant
       - POSTGRES_SERVER=db
       - POSTGRES_DB=${POSTGRES_DB-memex_db}
