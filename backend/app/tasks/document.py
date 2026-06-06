@@ -6,11 +6,11 @@ from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.workflows.document import DocumentWorkflows
 from app.core.celery_app import celery_app
-from app.core import engine
+from app.core.celery_db import celery_db_engine
 
 
 async_session_maker = async_sessionmaker(
-    bind=engine,
+    bind=celery_db_engine,
     expire_on_commit=False
 )
 
