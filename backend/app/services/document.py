@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.repositories import DocumentRepository
 from app.services.s3 import S3Storage
 from app.schemas.document import DocumentCreate
-from app.tasks.document import process_document_task
 from app.models.document import Document
 from app.enums.document import DocumentStatuses
 
@@ -35,6 +34,7 @@ class DocumentService:
             
             await self._db.commit()
             
+            from app.tasks.document import process_document_task
             process_document_task.delay(str(created_doc.id))
             
             return created_doc
