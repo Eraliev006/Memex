@@ -1,10 +1,10 @@
+from sqlalchemy import NullPool
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.pool import NullPool
 
 from app.core import settings
 
-engine = create_async_engine(
+
+celery_db = create_async_engine(
     str(settings.SQLALCHEMY_DATABASE_URI),
-    pool_size=10,
-    max_overflow=20
+    poolclass=NullPool
 )
