@@ -13,6 +13,7 @@ from app.enums.document import DocumentStatuses
 
 if TYPE_CHECKING:
     from .user import User
+    from .chunk import Chunk
 
 
 class Document(Base):
@@ -29,3 +30,4 @@ class Document(Base):
     
     
     user: Mapped['User'] = relationship(back_populates='documents')
+    chunks: Mapped['Chunk'] = relationship(back_populates='chunks')
