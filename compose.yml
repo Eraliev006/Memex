@@ -40,8 +40,8 @@ services:
     env_file:
       - .env
     volumes:
-      - ./backend:/app
-      - /app/.venv
+      - ~/.cache/huggingface:/root/.cache/huggingface
+
     environment:
       - ENVIRONMENT=local
       - LLAMA_CLOUD_API_KEY=${LLAMA_CLOUD_API_KEY}
@@ -73,8 +73,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ./backend:/app
-      - /app/.venv
+      - ~/.cache/huggingface:/root/.cache/huggingface
     environment:
       - ENVIRONMENT=local
       - OPENAI_API_KEY=${OPENAI_API_KEY}
