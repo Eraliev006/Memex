@@ -30,4 +30,4 @@ class Document(Base):
     
     
     user: Mapped['User'] = relationship(back_populates='documents')
-    chunks: Mapped['Chunk'] = relationship(back_populates='chunks')
+    chunks: Mapped[list['Chunk']] = relationship(back_populates='document')
