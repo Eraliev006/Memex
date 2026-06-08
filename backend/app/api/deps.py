@@ -1,10 +1,12 @@
 
 from dataclasses import dataclass
+from functools import lru_cache
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 import jwt
 
+from sentence_transformers import SentenceTransformer
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 from sqlalchemy import select
 
@@ -14,6 +16,7 @@ from typing import Annotated, Any, AsyncGenerator
 from app.services import AuthService, DocumentService
 from app.models.user import User
 from app.services.s3 import S3Storage
+from app.providers.embeddings.bge import BGEEmbeddingProvider
 
 
 @dataclass
@@ -88,3 +91,19 @@ async def get_current_user(db: SessionDep, token: TokenDep):
 
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
 
+
+
+@lru_cache
+def get_embeddings_providers():
+    match settings.EMBEDDING_PROVIDER:
+        case 'sentence-transformers':
+            model = SentenceTransformer(
+                settings.EMBEDDING_MODEL
+            )
+            return BGEEmbeddingProvider(model=model)
+        
+        case _:
+            raise ValueError(
+                f'Unknown embedding provider',
+                f'{settings.EMBEDDING_PROVIDER}'
+            )
