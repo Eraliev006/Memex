@@ -45,6 +45,10 @@ class Settings(BaseSettings):
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str = ""
     POSTGRES_DB: str = ""
+    
+    QDRANT_HOST: str 
+    QDRANT_PORT: int = 6333
+    COLLECTION_NAME: str = 'chunks'
 
     S3_BUCKET_NAME: str
     S3_ENDPOINT_URL: str = "http://localhost:9000"
@@ -55,6 +59,9 @@ class Settings(BaseSettings):
     
     REDIS_HOST: str = 'localhost'
     
+    EMBEDDING_MODEL: str = "BAAI/bge-m3"
+    EMBEDDING_SIZE: int = 1024
+    EMBEDDING_PROVIDER: str = 'sentence-transformers'
     
     
     @computed_field  # type: ignore[prop-decorator]
