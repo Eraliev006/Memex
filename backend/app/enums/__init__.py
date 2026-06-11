@@ -1,4 +1,4 @@
 from .document import DocumentStatuses
-from .message import MessageRole
+from .message import MessageRole, MessageStatus
 
-__all__ = ['DocumentStatuses', 'MessageRole']
+__all__ = ['DocumentStatuses', 'MessageRole', 'MessageStatus']
