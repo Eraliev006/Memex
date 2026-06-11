@@ -3,6 +3,8 @@ import uuid
 
 from pydantic import BaseModel, ConfigDict
 
+from app.schemas.chat_cursor import ChatCursor
+
 
 class ChatSessionCreate(BaseModel):
     title: str | None = None
@@ -20,3 +22,7 @@ class ChatSessionResponse(BaseModel):
     message_count: int
     
     model_config = ConfigDict(from_attributes=True)
+    
+class ChatListResponse(BaseModel):
+    items: list[ChatSessionResponse]
+    next_cursor: ChatCursor | None
