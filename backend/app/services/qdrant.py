@@ -1,7 +1,7 @@
 import uuid
 
 from qdrant_client import AsyncQdrantClient
-from qdrant_client.models import FieldCondition, Filter, MatchValue, PointStruct, ScoredPoint, VectorParams, Distance
+from qdrant_client.models import Condition, FieldCondition, Filter, MatchAny, MatchValue, PointStruct, ScoredPoint, VectorParams, Distance
 
 from app.core import settings
 
@@ -12,6 +12,31 @@ class QdrantService:
             port=settings.QDRANT_PORT,
         )
         self._collection_name = settings.COLLECTION_NAME
+        
+    def _build_filter(
+        self,
+        user_id: uuid.UUID,
+        docs_ids: list[uuid.UUID] | None = None
+    ) -> Filter:
+
+        must: list[Condition] = [
+            FieldCondition(
+                key="user_id",
+                match=MatchValue(value=str(user_id))
+            )
+        ]
+
+        if docs_ids:
+            must.append(
+                FieldCondition(
+                    key="document_id",
+                    match=MatchAny(
+                        any=[str(doc_id) for doc_id in docs_ids]
+                    )
+                )
+            )
+
+        return Filter(must=must)
         
     async def ensure_collection(self):
         if not await self._client.collection_exists(self._collection_name):
@@ -28,18 +53,16 @@ class QdrantService:
             points=points
         )
         
-    async def search(self, query_vector: list[float], user_id: uuid.UUID, limit: int = 5) -> list[ScoredPoint]:
+    async def search(self, query_vector: list[float], user_id: uuid.UUID, limit: int = 5, docs_ids: list[uuid.UUID] | None = None) -> list[ScoredPoint]:
+        query_filter = self._build_filter(
+            user_id=user_id,
+            docs_ids=docs_ids,
+        )
+        
         result = await self._client.query_points(
             collection_name=self._collection_name,
             query=query_vector,
-            query_filter=Filter(
-                must=[
-                    FieldCondition(
-                        key='user_id',
-                        match=MatchValue(value=str(user_id))
-                    ),
-                ],
-            ),
+            query_filter=query_filter,
             limit=limit
         )
         return result.points
