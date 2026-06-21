@@ -1,16 +1,15 @@
 from dataclasses import dataclass
 from typing import Annotated, Any, AsyncGenerator
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 import jwt
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
 from app.core import engine, settings, security
-from app.core.providers import get_embedding_provider
 from app.models.user import User
 from app.repositories import UserRepository
-from app.services import AuthService, DocumentService, EmbeddingService, QdrantService, S3Storage, SearchService
+from app.services import AuthService, DocumentService, S3Storage, SearchService
 
 
 @dataclass
@@ -23,11 +22,6 @@ async_session_maker = async_sessionmaker(
 )
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 _s3_storage_instance = S3Storage()
-_qdrant_service = QdrantService()
-_search_service = SearchService(
-    embedding_service=EmbeddingService(get_embedding_provider()),
-    qdrant_service=_qdrant_service,
-)
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
@@ -90,7 +84,7 @@ CurrentUserDep = Annotated[User, Depends(get_current_user)]
 
 
 # SEARCH SERVICE DI
-def get_search_service() -> SearchService:
-    return _search_service
+def get_search_service(request: Request) -> SearchService:
+    return request.app.state.search_service
 
 SearchServiceDep = Annotated[SearchService, Depends(get_search_service)]
