@@ -4,7 +4,7 @@ from fastapi import FastAPI
 
 from app.core import settings
 from app.api.main import api_router
-from app.services.qdrant import QdrantService
+from app.services import QdrantService
 
 
 @asynccontextmanager
