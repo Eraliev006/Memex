@@ -38,7 +38,7 @@ class DocumentService:
             process_document_task.delay(str(created_doc.id))
             
             return created_doc
-        except:
+        except Exception:
             await self._db.rollback()
             raise
 
