@@ -2,13 +2,10 @@ import uuid
 
 from qdrant_client.models import PointStruct
 
-from app.repositories.document import DocumentRepository
-from app.services.s3 import S3Storage
-from app.services.parser import LlamaParser
+from app.repositories import ChunkRepository, DocumentRepository
+from app.services import ChunkingService, EmbeddingService, LlamaParser, QdrantService, S3Storage
 from app.enums.document import DocumentStatuses
-from app.services import ChunkingService, EmbeddingService, QdrantService
-from app.api.deps import get_embeddings_providers
-from app.repositories.chunk import ChunkRepository
+from app.core.providers import get_embedding_provider
 
 
 class DocumentWorkflows:
@@ -16,7 +13,7 @@ class DocumentWorkflows:
     async def run(doc_id: uuid.UUID, async_session):
         repo = DocumentRepository(async_session)
         s3 = S3Storage()
-        embedder = EmbeddingService(provider=get_embeddings_providers())
+        embedder = EmbeddingService(provider=get_embedding_provider())
         chunking = ChunkingService()
         qdrant = QdrantService()
         chunk_repo = ChunkRepository(async_session)

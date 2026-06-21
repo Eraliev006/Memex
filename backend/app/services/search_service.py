@@ -1,11 +1,9 @@
 
-
 import uuid
 
 from qdrant_client.models import ScoredPoint
 
 from app.services.embedding import EmbeddingService
-from app.api.deps import get_embeddings_providers
 from app.services.qdrant import QdrantService
 from app.schemas.search_result import SearchResult, SearchResultItem
 
