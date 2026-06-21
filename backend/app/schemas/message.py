@@ -6,6 +6,7 @@ import uuid
 from pydantic import BaseModel, ConfigDict
 
 from app.enums.message import MessageRole, MessageStatus
+from app.schemas.message_cursor import MessageCursor
 
 
 class MessageCreate(BaseModel):
@@ -32,3 +33,7 @@ class MessageStreamChunk(BaseModel):
     message_id: uuid.UUID
     content: str
     is_final: bool = False
+    
+class MessageHistoryResponse(BaseModel):
+    items: list[MessageResponse]
+    nextCursor: MessageCursor | None
