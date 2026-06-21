@@ -1,78 +1,60 @@
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.repositories.user import UserRepository
-from app.schemas.auth_schemas import LoginWithPasswordRequest, TokenResponse
-from app.schemas.user import UserCreate
-from app.schemas.reset_password import ResetPasswordRequest
-
-from .utils import verify_password_reset_token
+from app.repositories import UserRepository
+from app.schemas import LoginWithPasswordRequest, TokenResponse, UserCreate, UserResponse, ResetPasswordRequest
 from app.core import security
+from .utils import verify_password_reset_token
+
 
 class AuthService:
     def __init__(self, db: AsyncSession):
+        self._db = db
         self._repo = UserRepository(db)
-        
+
     async def login_with_password(self, data: LoginWithPasswordRequest) -> TokenResponse:
-        """_summary_
+        user = await self._repo.get_by_email(email=data.email)
 
-        Args:
-            email (str): user's email
-            password (str): user's password
-
-        Raises:
-            HTTPException: status_code=404 if password or email is incorrect
-
-        Returns:
-            TokenResponse: return tokens pair(access/refresh token)
-        """
-        email = data.email
-        password = data.password
-        user = await self._repo.get_by_email(email=email)
-        
         if not user:
             raise HTTPException(status_code=401, detail="Incorrect password or email")
-        
-        is_verified, new_hash = security.verify_password(password, user.hashed_password)
-        
+
+        is_verified, new_hash = security.verify_password(data.password, user.hashed_password)
+
         if not is_verified:
             raise HTTPException(status_code=401, detail="Incorrect password or email")
-        
-        # If need to update hash of password, but password is a same
+
         if new_hash:
             await self._repo.update_password(user, new_hash)
-            
+            await self._db.commit()
+
         access_token = security.create_access_token(user.id)
         refresh_token = security.create_refresh_token(user.id)
-        
+
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token
         )
-    
-            
+
     async def reset_password(self, data: ResetPasswordRequest) -> None:
-        token = data.token
-        new_password = data.new_password
-        
-        email = verify_password_reset_token(token)
+        email = verify_password_reset_token(data.token)
         if not email:
             raise HTTPException(status_code=400, detail="Invalid or expired token")
-        
+
         user = await self._repo.get_by_email(email)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        
-        hashed_password = security.hash_password(new_password)
+
+        hashed_password = security.hash_password(data.new_password)
         await self._repo.update_password(user, hashed_password)
-        
-    async def register(self, user: UserCreate):
+        await self._db.commit()
+
+    async def register(self, user: UserCreate) -> UserResponse:
         existing_user = await self._repo.get_by_email(user.email)
-        
+
         if existing_user:
-            raise HTTPException(status_code=400, detail="Email already registered")     
-        
+            raise HTTPException(status_code=400, detail="Email already registered")
+
         hashed_pwd = security.hash_password(user.password)
-        
         new_user = await self._repo.create_user(user_in=user, hashed_password=hashed_pwd)
-        return new_user   
+        await self._db.commit()
+        return UserResponse.model_validate(new_user)
