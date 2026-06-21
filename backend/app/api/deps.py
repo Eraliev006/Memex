@@ -1,22 +1,16 @@
-
 from dataclasses import dataclass
-from functools import lru_cache
+from typing import Annotated, Any, AsyncGenerator
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 import jwt
-
-from sentence_transformers import SentenceTransformer
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
-from sqlalchemy import select
 
 from app.core import engine, settings, security
-from typing import Annotated, Any, AsyncGenerator
-
-from app.services import AuthService, DocumentService
+from app.core.providers import get_embedding_provider
 from app.models.user import User
-from app.services.s3 import S3Storage
-from app.providers.embeddings.bge import BGEEmbeddingProvider
+from app.repositories import UserRepository
+from app.services import AuthService, DocumentService, EmbeddingService, QdrantService, S3Storage, SearchService
 
 
 @dataclass
@@ -29,21 +23,25 @@ async_session_maker = async_sessionmaker(
 )
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 _s3_storage_instance = S3Storage()
+_qdrant_service = QdrantService()
+_search_service = SearchService(
+    embedding_service=EmbeddingService(get_embedding_provider()),
+    qdrant_service=_qdrant_service,
+)
+
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with async_session_maker() as session:
         yield session
-        
+
 SessionDep = Annotated[AsyncSession, Depends(get_db)]
 TokenDep = Annotated[str, Depends(oauth2_scheme)]
-
 
 
 # AUTH SERVICE DI
 async def get_auth_service(db: SessionDep) -> AuthService:
     return AuthService(db)
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
-
 
 
 # S3 SERVICE DI
@@ -57,21 +55,19 @@ async def get_document_service(db: SessionDep) -> DocumentService:
 DocumentServiceDep = Annotated[DocumentService, Depends(get_document_service)]
 
 
-
 # CURRENT USER DEP
-async def get_current_user(db: SessionDep, token: TokenDep):
+async def get_current_user(db: SessionDep, token: TokenDep) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        # Декодируем JWT токен
         payload: dict[str, Any] = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
         )
-        user_id: str = payload.get("sub") # type: ignore
-        token_type: str = payload.get("type") # type: ignore
+        user_id: str = payload.get("sub")  # type: ignore
+        token_type: str = payload.get("type")  # type: ignore
         if user_id is None:
             raise credentials_exception
         if token_type != "access":
@@ -79,31 +75,22 @@ async def get_current_user(db: SessionDep, token: TokenDep):
         token_data = TokenData(sub=user_id)
     except jwt.InvalidTokenError:
         raise credentials_exception
-    
-    result = await db.execute(select(User).where(User.id == token_data.sub))
-    user = result.scalar_one_or_none()
-    
+
+    repo = UserRepository(db)
+    if not token_data.sub:
+        raise ValueError("Invalid user id")
+    user = await repo.get_by_id(token_data.sub)
+
     if user is None:
         raise credentials_exception
-        
+
     return user
-    
 
 CurrentUserDep = Annotated[User, Depends(get_current_user)]
 
 
+# SEARCH SERVICE DI
+def get_search_service() -> SearchService:
+    return _search_service
 
-@lru_cache
-def get_embeddings_providers():
-    match settings.EMBEDDING_PROVIDER:
-        case 'sentence-transformers':
-            model = SentenceTransformer(
-                settings.EMBEDDING_MODEL
-            )
-            return BGEEmbeddingProvider(model=model)
-        
-        case _:
-            raise ValueError(
-                f'Unknown embedding provider',
-                f'{settings.EMBEDDING_PROVIDER}'
-            )
+SearchServiceDep = Annotated[SearchService, Depends(get_search_service)]
