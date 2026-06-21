@@ -60,12 +60,13 @@ class DocumentWorkflows:
                         "user_id": str(doc.user_id),
                         "chunk_index": i,
                         "content": chunk,
-                        "document_title": doc.title
+                        "document_title": doc.title,
+                        'chunk_id': point_id
                     }
                 )
 
                 chunk_dict = {
-                    "id": uuid.uuid4(),
+                    "id": point_id,
                     "document_id": doc.id,
                     "user_id": doc.user_id,
                     "content": chunk,
