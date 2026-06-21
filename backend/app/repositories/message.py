@@ -45,22 +45,22 @@ class MessageRepository:
         if cursor:
             stmt = stmt.where(
                 or_(
-                    Message.created_at < cursor.created_at,
+                    Message.created_at > cursor.created_at,
                     and_(
                         Message.created_at == cursor.created_at,
-                        Message.id < cursor.id
+                        Message.id > cursor.id
                     )
                 )
             )
         
-        stmt = stmt.order_by(Message.created_at.asc(), Message.id.asc()).limit(limit)
+        stmt = stmt.order_by(Message.created_at.asc(), Message.id.asc()).limit(limit + 1)
         
         result = await self.db.execute(stmt)
         messages = list(result.scalars().all())
         
         return messages
     
-    async def get_last_messaged(
+    async def get_last_messages(
         self,
         chat_id: uuid.UUID,
         limit: int = 20,    
