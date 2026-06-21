@@ -1,5 +1,4 @@
 
-import datetime
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -78,7 +77,7 @@ class ChatSessionRepository:
             update(ChatSession)
             .where(ChatSession.id == chat_session_id)
             .values(
-                last_message_at=datetime.datetime.now(datetime.timezone.utc),
+                last_message_at=func.now(),
                 message_count=ChatSession.message_count + 1,
             )
             .returning(ChatSession.id)
