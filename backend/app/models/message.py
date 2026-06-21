@@ -27,7 +27,7 @@ class Message(Base):
     prompt_tokens: Mapped[int | None]
     completion_tokens: Mapped[int | None]
     meta: Mapped[dict | None] = mapped_column(JSON) 
-    status: Mapped[MessageStatus] = mapped_column(Enum(MessageStatus), name='message_statuses')
+    status: Mapped[MessageStatus] = mapped_column(Enum(MessageStatus), name='message_statuses', default=MessageStatus.created)
     
     chat_session: Mapped['ChatSession'] = relationship(back_populates='messages', lazy='select')
     
