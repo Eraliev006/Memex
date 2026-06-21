@@ -36,4 +36,4 @@ class MessageStreamChunk(BaseModel):
     
 class MessageHistoryResponse(BaseModel):
     items: list[MessageResponse]
-    nextCursor: MessageCursor | None
+    next_cursor: MessageCursor | None
