@@ -7,7 +7,7 @@ from app.schemas.chat_cursor import ChatCursor
 
 
 class ChatSessionCreate(BaseModel):
-    title: str | None = None
+    title: str = "new chat"
 
 class ChatSessionUpdate(BaseModel):
     title: str | None = None
