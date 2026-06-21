@@ -3,7 +3,7 @@ import datetime
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import and_, delete, or_, select, update
+from sqlalchemy import and_, delete, func, or_, select, update
 
 from app.schemas.chat_session import ChatSessionCreate, ChatSessionUpdate
 from app.models.chat_session import ChatSession
@@ -72,3 +72,17 @@ class ChatSessionRepository:
         result = await self.db.execute(stmt)
         
         return result.scalar_one_or_none()
+    
+    async def touch(self, chat_session_id: uuid.UUID) -> bool:
+        stmt = (
+            update(ChatSession)
+            .where(ChatSession.id == chat_session_id)
+            .values(
+                last_message_at=datetime.datetime.now(datetime.timezone.utc),
+                message_count=ChatSession.message_count + 1,
+            )
+            .returning(ChatSession.id)
+        )
+        result = await self.db.execute(stmt)
+        await self.db.flush()
+        return result.scalar_one_or_none() is not None
