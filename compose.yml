@@ -45,6 +45,7 @@ services:
     environment:
       - ENVIRONMENT=local
       - LLAMA_CLOUD_API_KEY=${LLAMA_CLOUD_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
       - QDRANT_HOST=qdrant
       - POSTGRES_SERVER=db
       - POSTGRES_DB=${POSTGRES_DB-memex_db}
@@ -76,8 +77,8 @@ services:
       - ~/.cache/huggingface:/root/.cache/huggingface
     environment:
       - ENVIRONMENT=local
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
       - LLAMA_CLOUD_API_KEY=${LLAMA_CLOUD_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
       - QDRANT_HOST=qdrant
       - POSTGRES_SERVER=db
       - POSTGRES_DB=${POSTGRES_DB-memex_db}
