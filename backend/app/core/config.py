@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     S3_SECRET_KEY: str
     
     LLAMA_CLOUD_API_KEY: str
+    GROQ_API_KEY: str
     
     REDIS_HOST: str = 'localhost'
     
