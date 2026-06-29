@@ -1,4 +1,5 @@
 from .auth import AuthService
+from .chat_service import ChatService
 from .document import DocumentService
 from .s3 import S3Storage
 from .parser import LlamaParser
@@ -12,6 +13,7 @@ from .chat_session_service import ChatSessionService
 
 __all__ = [
     'AuthService',
+    'ChatService',
     'DocumentService',
     'S3Storage',
     'LlamaParser',

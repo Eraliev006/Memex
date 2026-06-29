@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.message import Message
 from app.repositories import MessageRepository, ChatSessionRepository
 from app.schemas import MessageCreate, MessageHistoryResponse, MessageResponse, MessageCursor
+from app.enums.message import MessageRole, MessageStatus
 
 
 class MessageService:
@@ -50,6 +51,39 @@ class MessageService:
             items=[MessageResponse.model_validate(msg) for msg in messages],
             next_cursor=next_cursor,
         )
+
+    async def create_user_message(
+        self,
+        session_id: uuid.UUID,
+        user_id: uuid.UUID,
+        content: str,
+    ) -> MessageResponse:
+        return await self.create(
+            MessageCreate(role=MessageRole.user, content=content),
+            chat_session_id=session_id,
+            user_id=user_id,
+        )
+
+    async def create_assistant_message(
+        self,
+        session_id: uuid.UUID,
+        content: str = "",
+        status: MessageStatus = MessageStatus.streaming,
+    ) -> MessageResponse:
+        message_in = Message(
+            role=MessageRole.assistant,
+            content=content,
+            chat_session_id=session_id,
+            status=status,
+        )
+        resp = await self._repo.create(message_in)
+        await self._chat_repo.touch(session_id)
+        await self._db.commit()
+        return MessageResponse.model_validate(resp)
+
+    async def update_message(self, message_id: uuid.UUID, **kwargs) -> None:
+        await self._repo.update(message_id, kwargs)
+        await self._db.commit()
 
     async def get_context_history(
         self,
