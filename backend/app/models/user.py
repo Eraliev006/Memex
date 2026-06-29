@@ -10,6 +10,7 @@ from app.models.base import Base
 
 if TYPE_CHECKING:
     from .document import Document
+    from .chat_session import ChatSession
 
 class User(Base):
     __tablename__ = "users"
@@ -21,3 +22,4 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(server_default=func.now(),nullable=False)
     
     documents: Mapped['Document'] = relationship(back_populates='user')
+    chat_sessions: Mapped['ChatSession'] = relationship(back_populates='user')
