@@ -56,7 +56,6 @@ class Settings(BaseSettings):
     S3_SECRET_KEY: str
     
     LLAMA_CLOUD_API_KEY: str
-    GROQ_API_KEY: str
     
     REDIS_HOST: str = 'localhost'
     
@@ -65,6 +64,10 @@ class Settings(BaseSettings):
     EMBEDDING_PROVIDER: str = 'sentence-transformers'
     
     LLM_PROVIDER: str = 'groq'
+    
+    GROQ_API_KEY: str
+    GROQ_MODEL: str = "llama-3.3-70b-versatile"
+    GROQ_MAX_TOKENS: int = 2048
     
     
     @computed_field  # type: ignore[prop-decorator]

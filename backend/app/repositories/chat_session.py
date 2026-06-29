@@ -34,7 +34,7 @@ class ChatSessionRepository:
         stmt = (
             update(ChatSession)
             .where(ChatSession.id == chat_session_id)
-            .values(**new_data)
+            .values(updated_at=func.now(), **new_data)
             .returning(ChatSession)
         )
         result = await self.db.execute(stmt)
@@ -59,7 +59,7 @@ class ChatSessionRepository:
                 
             )
             
-        stmt = stmt.order_by(ChatSession.last_message_at.desc(), ChatSession.id.desc()).limit(limit)
+        stmt = stmt.order_by(ChatSession.last_message_at.desc(), ChatSession.id.desc()).limit(limit + 1)
         
         result = await self.db.execute(stmt)
         
@@ -77,6 +77,7 @@ class ChatSessionRepository:
             update(ChatSession)
             .where(ChatSession.id == chat_session_id)
             .values(
+                updated_at=func.now(),
                 last_message_at=func.now(),
                 message_count=ChatSession.message_count + 1,
             )

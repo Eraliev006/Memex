@@ -1,7 +1,7 @@
 import uuid
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import and_, or_, select, update
+from sqlalchemy import and_, func, or_, select, update
 
 
 from app.models.message import Message
@@ -22,7 +22,7 @@ class MessageRepository:
         stmt = (
             update(Message)
             .where(Message.id == message_id)
-            .values(**new_data)
+            .values(updated_at=func.now(), **new_data)
         )
         
         await self.db.execute(stmt)        
