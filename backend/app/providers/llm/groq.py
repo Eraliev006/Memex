@@ -28,8 +28,8 @@ class GroqLLM:
     async def complete(self, messages: list[dict]) -> str:
         response = await self.client.chat.completions.create(
             messages=messages,  # type: ignore
-            model="llama-3.3-70b-versatile",
-            max_completion_tokens=500,
+            model=settings.GROQ_MODEL,
+            max_completion_tokens=settings.GROQ_MAX_TOKENS,
             top_p=1,
             temperature=0.5,
             stop=None,
