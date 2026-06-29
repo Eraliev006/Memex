@@ -64,6 +64,8 @@ class Settings(BaseSettings):
     EMBEDDING_SIZE: int = 1024
     EMBEDDING_PROVIDER: str = 'sentence-transformers'
     
+    LLM_PROVIDER: str = 'groq'
+    
     
     @computed_field  # type: ignore[prop-decorator]
     @property
