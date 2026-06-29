@@ -7,9 +7,14 @@ import jwt
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
 from app.core import engine, settings, security
+from app.core.providers import get_llm_provider
 from app.models.user import User
-from app.repositories import UserRepository
+from app.repositories import UserRepository, ChatSessionRepository
 from app.services import AuthService, DocumentService, S3Storage, SearchService
+from app.services.chat_service import ChatService
+from app.services.chat_session_service import ChatSessionService
+from app.services.llm import LLMService
+from app.services.message import MessageService
 
 
 @dataclass
@@ -88,3 +93,29 @@ def get_search_service(request: Request) -> SearchService:
     return request.app.state.search_service
 
 SearchServiceDep = Annotated[SearchService, Depends(get_search_service)]
+
+
+# CHAT SERVICE DI
+_llm_service = LLMService(provider=get_llm_provider())
+
+async def get_chat_service(
+    db: SessionDep,
+    search_service: SearchServiceDep,
+) -> ChatService:
+    message_service = MessageService(db)
+    chat_session_repo = ChatSessionRepository(db)
+    return ChatService(
+        message_service=message_service,
+        search_service=search_service,
+        llm_service=_llm_service,
+        chat_session_repo=chat_session_repo,
+    )
+
+ChatServiceDep = Annotated[ChatService, Depends(get_chat_service)]
+
+
+# CHAT SESSION SERVICE DI
+async def get_chat_session_service(db: SessionDep) -> ChatSessionService:
+    return ChatSessionService(db)
+
+ChatSessionServiceDep = Annotated[ChatSessionService, Depends(get_chat_session_service)]
