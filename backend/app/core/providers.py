@@ -19,6 +19,7 @@ def get_embedding_provider() -> EmbeddingProtocol:
         case _:
             raise ValueError(f'Unknown embedding provider: {settings.EMBEDDING_PROVIDER}')
 
+@lru_cache
 def get_llm_provider() -> LLMProtocol:
     match settings.LLM_PROVIDER:
         case 'groq':

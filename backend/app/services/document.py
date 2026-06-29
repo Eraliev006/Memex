@@ -32,11 +32,10 @@ class DocumentService:
         try:
             created_doc = await self._repo.create_document(document_in, user_id)
             
-            await self._db.commit()
-            
             from app.tasks.document import process_document_task
             process_document_task.delay(str(created_doc.id))
             
+            await self._db.commit()
             return created_doc
         except Exception:
             await self._db.rollback()

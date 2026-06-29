@@ -14,10 +14,12 @@ class MessageService:
         self._repo = MessageRepository(self._db)
         self._chat_repo = ChatSessionRepository(self._db)
 
-    async def create(self, message: MessageCreate, chat_session_id: uuid.UUID) -> MessageResponse:
+    async def create(self, message: MessageCreate, chat_session_id: uuid.UUID, user_id: uuid.UUID) -> MessageResponse:
         chat = await self._chat_repo.get_by_id(chat_session_id)
         if not chat:
             raise HTTPException(status_code=404, detail=f"Chat {chat_session_id} not found")
+        if chat.user_id != user_id:
+            raise HTTPException(status_code=403, detail="Access denied")
 
         message_in = Message(**message.model_dump(), chat_session_id=chat_session_id)
         resp = await self._repo.create(message_in)

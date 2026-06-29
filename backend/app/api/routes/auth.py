@@ -11,6 +11,7 @@ from app.schemas import (
     ResetPasswordResponse,
     LoginWithPasswordRequest,
     TokenResponse,
+    RefreshTokenRequest,
 )
 
 
@@ -33,6 +34,14 @@ async def register(
     user: UserCreate,
     auth_service: AuthServiceDep):
     return await auth_service.register(user)
+
+@router.post('/refresh', status_code=200, response_model=TokenResponse)
+async def refresh(
+    body: RefreshTokenRequest,
+    auth_service: AuthServiceDep,
+):
+    return await auth_service.refresh_tokens(body.refresh_token)
+
 
 @router.post('/reset-password', status_code=200, response_model=ResetPasswordResponse)
 async def reset_password(

@@ -22,6 +22,7 @@ class DocumentWorkflows:
         
         if not started:
             return
+        await async_session.commit()
         
         try:
             doc = await repo.get_document_by_id(doc_id)
@@ -86,9 +87,13 @@ class DocumentWorkflows:
             await async_session.commit()
         
         except Exception as e:
+            try:
+                await qdrant.delete_by_document_id(doc_id)
+            except Exception:
+                pass
             await repo.update_document(
                 doc_id,
-                status = DocumentStatuses.failed.value
-            ) 
+                status=DocumentStatuses.failed.value
+            )
             await async_session.commit()
             raise e

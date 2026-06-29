@@ -1,9 +1,12 @@
+from typing import Any
+
+import jwt
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories import UserRepository
 from app.schemas import LoginWithPasswordRequest, TokenResponse, UserCreate, UserResponse, ResetPasswordRequest
-from app.core import security
+from app.core import security, settings
 from .utils import verify_password_reset_token
 
 
@@ -47,6 +50,30 @@ class AuthService:
         hashed_password = security.hash_password(data.new_password)
         await self._repo.update_password(user, hashed_password)
         await self._db.commit()
+
+    async def refresh_tokens(self, refresh_token: str) -> TokenResponse:
+        try:
+            payload: dict[str, Any] = jwt.decode(
+                refresh_token, settings.SECRET_KEY, algorithms=[security.ALGORITHM]
+            )
+        except jwt.InvalidTokenError:
+            raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+        if payload.get("type") != "refresh":
+            raise HTTPException(status_code=401, detail="Invalid token type")
+
+        user_id: str | None = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid refresh token")
+
+        user = await self._repo.get_by_id(user_id)
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+
+        return TokenResponse(
+            access_token=security.create_access_token(user.id),
+            refresh_token=security.create_refresh_token(user.id),
+        )
 
     async def register(self, user: UserCreate) -> UserResponse:
         existing_user = await self._repo.get_by_email(user.email)
