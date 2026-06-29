@@ -21,5 +21,5 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(nullable=False)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now(),nullable=False)
     
-    documents: Mapped['Document'] = relationship(back_populates='user')
-    chat_sessions: Mapped['ChatSession'] = relationship(back_populates='user')
+    documents: Mapped[list['Document']] = relationship(back_populates='user')
+    chat_sessions: Mapped[list['ChatSession']] = relationship(back_populates='user')
