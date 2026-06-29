@@ -20,7 +20,10 @@ Memex is the modern, open-source personal knowledge base designed to turn your s
 ## Tech Stack
 - [FastAPI](https://fastapi.tiangolo.com/) – framework
 - [Python](https://www.python.org/) – language
-- [Vue.js](https://vuejs.org/) – frontend framework
+- [React](https://react.dev/) – frontend framework
+- [React Router v7](https://reactrouter.com/) – routing & SSR
+- [TanStack Query](https://tanstack.com/query) – server state management
+- [shadcn/ui](https://ui.shadcn.com/) – UI components
 - [LangChain](https://www.langchain.com/) – LLM orchestration & ReAct agent
 - [Qdrant](https://qdrant.tech/) – vector database
 - [PostgreSQL](https://www.postgresql.org/) – relational database
