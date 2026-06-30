@@ -1,6 +1,8 @@
 from typing import AsyncIterator
 from uuid import UUID
 
+from fastapi import HTTPException
+
 from app.services.llm import LLMService
 from app.services.message import MessageService
 from app.services.search_service import SearchService
@@ -30,6 +32,12 @@ class ChatService:
         user_message: str,
         doc_ids: list[UUID] | None = None,
     ) -> AsyncIterator[str]:
+        session = await self._chat_session_repo.get_by_id(session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Chat session not found")
+        if session.user_id != user_id:
+            raise HTTPException(status_code=403, detail="Access denied")
+
         await self._messages.create_user_message(
             session_id=session_id,
             user_id=user_id,
