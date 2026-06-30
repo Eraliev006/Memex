@@ -4,8 +4,8 @@ from fastapi import APIRouter, Query, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from app.api.deps import ChatServiceDep, ChatSessionServiceDep, CurrentUserDep
-from app.schemas import ChatSessionCreate, ChatSessionResponse, ChatSessionUpdate, ChatListResponse
+from app.api.deps import ChatServiceDep, ChatSessionServiceDep, CurrentUserDep, MessageServiceDep
+from app.schemas import ChatSessionCreate, ChatSessionResponse, ChatSessionUpdate, ChatListResponse, MessageHistoryResponse, MessageCursor
 from app.schemas.chat_cursor import ChatCursor
 
 
@@ -61,6 +61,25 @@ async def delete_session(
     current_user: CurrentUserDep,
 ):
     await chat_session_service.delete_chat_session(session_id, current_user.id)
+
+
+@router.get("/{session_id}/messages", response_model=MessageHistoryResponse)
+async def get_messages(
+    session_id: UUID,
+    message_service: MessageServiceDep,
+    current_user: CurrentUserDep,
+    limit: int = Query(default=20, le=100),
+    cursor_id: UUID | None = Query(default=None),
+    cursor_created_at: str | None = Query(default=None),
+):
+    cursor = None
+    if cursor_id and cursor_created_at:
+        from datetime import datetime
+        cursor = MessageCursor(
+            id=cursor_id,
+            created_at=datetime.fromisoformat(cursor_created_at),
+        )
+    return await message_service.get_history(session_id, cursor, limit)
 
 
 @router.post("/{session_id}/message")
