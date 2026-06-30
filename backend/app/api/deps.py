@@ -114,6 +114,13 @@ async def get_chat_service(
 ChatServiceDep = Annotated[ChatService, Depends(get_chat_service)]
 
 
+# MESSAGE SERVICE DI
+async def get_message_service(db: SessionDep) -> MessageService:
+    return MessageService(db)
+
+MessageServiceDep = Annotated[MessageService, Depends(get_message_service)]
+
+
 # CHAT SESSION SERVICE DI
 async def get_chat_session_service(db: SessionDep) -> ChatSessionService:
     return ChatSessionService(db)
