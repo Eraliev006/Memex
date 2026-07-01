@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories import UserRepository
-from app.schemas import LoginWithPasswordRequest, TokenResponse, UserCreate, UserResponse, ResetPasswordRequest
+from app.schemas import LoginWithPasswordRequest, TokenResponse, UserCreate, UserResponse, ResetPasswordRequest, TokenPair
 from app.core import security, settings
 from .utils import verify_password_reset_token
 
@@ -15,7 +15,7 @@ class AuthService:
         self._db = db
         self._repo = UserRepository(db)
 
-    async def login_with_password(self, data: LoginWithPasswordRequest) -> TokenResponse:
+    async def login_with_password(self, data: LoginWithPasswordRequest) -> TokenPair:
         user = await self._repo.get_by_email(email=data.email)
 
         if not user:
@@ -33,7 +33,7 @@ class AuthService:
         access_token = security.create_access_token(user.id)
         refresh_token = security.create_refresh_token(user.id)
 
-        return TokenResponse(
+        return TokenPair(
             access_token=access_token,
             refresh_token=refresh_token
         )
@@ -72,7 +72,6 @@ class AuthService:
 
         return TokenResponse(
             access_token=security.create_access_token(user.id),
-            refresh_token=security.create_refresh_token(user.id),
         )
 
     async def register(self, user: UserCreate) -> UserResponse:

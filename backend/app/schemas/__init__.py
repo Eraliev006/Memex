@@ -1,4 +1,4 @@
-from .auth_schemas import RegisterRequest, LoginWithPasswordRequest, TokenResponse, RefreshTokenRequest
+from .auth_schemas import RegisterRequest, LoginWithPasswordRequest, TokenResponse, RefreshTokenRequest, TokenPair
 from .user import UserCreate, UserResponse
 from .reset_password import ResetPasswordRequest, ResetPasswordResponse
 from .document import DocumentCreate, DocumentResponse
@@ -13,6 +13,7 @@ __all__ = [
     'RefreshTokenRequest',
     'LoginWithPasswordRequest',
     'TokenResponse',
+    'TokenPair',
     'UserCreate',
     'UserResponse',
     'ResetPasswordRequest',
