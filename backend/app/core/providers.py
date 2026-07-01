@@ -8,6 +8,7 @@ from app.providers.embeddings.bge import BGEEmbeddingProvider
 from app.providers.embeddings.protocol import EmbeddingProtocol
 from app.providers.llm.protocol import LLMProtocol
 from app.providers.llm.groq import GroqLLM
+from app.providers.embeddings.voyageai import VoyageEmbeddingProvider
 
 
 @lru_cache
@@ -16,6 +17,8 @@ def get_embedding_provider() -> EmbeddingProtocol:
         case 'sentence-transformers':
             model = SentenceTransformer(settings.EMBEDDING_MODEL)
             return BGEEmbeddingProvider(model=model)
+        case 'voyageai':
+            return VoyageEmbeddingProvider(api_key=settings.VOYAGEAI_API_KEY)
         case _:
             raise ValueError(f'Unknown embedding provider: {settings.EMBEDDING_PROVIDER}')
 

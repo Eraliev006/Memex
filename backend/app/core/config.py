@@ -59,15 +59,17 @@ class Settings(BaseSettings):
     
     REDIS_HOST: str = 'localhost'
     
-    EMBEDDING_MODEL: str = "BAAI/bge-m3"
+    EMBEDDING_MODEL: Literal["BAAI/bge-m3", 'voyage-4-lite'] = 'voyage-4-lite'
     EMBEDDING_SIZE: int = 1024
-    EMBEDDING_PROVIDER: str = 'sentence-transformers'
+    EMBEDDING_PROVIDER: Literal['sentence-transformers', 'voyageai'] = 'voyageai'
     
     LLM_PROVIDER: str = 'groq'
     
     GROQ_API_KEY: str
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
     GROQ_MAX_TOKENS: int = 2048
+    
+    VOYAGEAI_API_KEY: str
     
     
     @computed_field  # type: ignore[prop-decorator]
