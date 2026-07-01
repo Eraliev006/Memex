@@ -47,6 +47,7 @@ services:
       - LLAMA_CLOUD_API_KEY=${LLAMA_CLOUD_API_KEY}
       - GROQ_API_KEY=${GROQ_API_KEY}
       - QDRANT_HOST=qdrant
+      - VOYAGEAI_API_KEY=${VOYAGEAI_API_KEY}
       - POSTGRES_SERVER=db
       - POSTGRES_DB=${POSTGRES_DB-memex_db}
       - POSTGRES_USER=${POSTGRES_USER-postgres}
@@ -79,6 +80,7 @@ services:
       - ENVIRONMENT=local
       - LLAMA_CLOUD_API_KEY=${LLAMA_CLOUD_API_KEY}
       - GROQ_API_KEY=${GROQ_API_KEY}
+      - VOYAGEAI_API_KEY=${VOYAGEAI_API_KEY}
       - QDRANT_HOST=qdrant
       - POSTGRES_SERVER=db
       - POSTGRES_DB=${POSTGRES_DB-memex_db}
@@ -117,6 +119,17 @@ services:
 
     command: server /data --console-address ":9001"
 
+  minio-init:
+    image: quay.io/minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 3;
+      mc alias set local http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD};
+      mc mb --ignore-existing local/${S3_BUCKET_NAME};
+      "
+      
 volumes:
   app-db-data:
   qdrant-data:
