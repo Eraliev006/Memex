@@ -2,7 +2,7 @@
 
 import uuid
 
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.document import DocumentCreate
@@ -46,22 +46,62 @@ class DocumentRepository:
         
         return result.scalar_one_or_none()
     
-    async def update_document(self, id: uuid.UUID, **kwargs) -> None:
+    async def update_document(self, id: uuid.UUID, **kwargs) -> Document | None:
         """Update document
 
         Args:
             id (uuid.UUID): Document's id for updating
         """
-        
+
         stmt = (
             update(Document)
             .where(Document.id == id)
             .values(**kwargs)
+            .returning(Document)
         )
 
-        await self.db.execute(stmt)
+        result = await self.db.execute(stmt)
         await self.db.flush()
-        
+
+        return result.scalar_one_or_none()
+
+    async def list_documents_by_user_id(self, user_id: uuid.UUID, skip: int = 0, limit: int = 20) -> list[Document]:
+        """List documents belonging to a user
+
+        Args:
+            user_id (uuid.UUID): owner of the documents
+            skip (int): number of rows to skip
+            limit (int): max number of rows to return
+        """
+
+        stmt = (
+            select(Document)
+            .where(Document.user_id == user_id)
+            .order_by(Document.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+        result = await self.db.execute(stmt)
+
+        return list(result.scalars().all())
+
+    async def delete_document(self, id: uuid.UUID) -> Document | None:
+        """Delete document by id
+
+        Args:
+            id (uuid.UUID): document's id
+        """
+
+        stmt = (
+            delete(Document)
+            .where(Document.id == id)
+            .returning(Document)
+        )
+        result = await self.db.execute(stmt)
+        await self.db.flush()
+
+        return result.scalar_one_or_none()
+
     async def try_start_processing(self, id: uuid.UUID) -> bool:
         stmt = (
             update(Document)

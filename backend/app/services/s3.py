@@ -51,3 +51,15 @@ class S3Storage:
             ) # type: ignore
             
             return await response['Body'].read() # type: ignore
+
+    async def delete_documents(self, storage_path: str) -> None:
+        """Delete document from S3 storage by storage path
+
+        Args:
+            storage_path (str): document's path in storage
+        """
+        async with self.session.create_client(**self._client_params()) as client:
+            await client.delete_object(
+                Bucket=self.bucket_name,
+                Key=storage_path
+            ) # type: ignore

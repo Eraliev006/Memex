@@ -1,7 +1,7 @@
 from .auth_schemas import RegisterRequest, LoginWithPasswordRequest, TokenResponse, RefreshTokenRequest, TokenPair
 from .user import UserCreate, UserResponse
 from .reset_password import ResetPasswordRequest, ResetPasswordResponse
-from .document import DocumentCreate, DocumentResponse
+from .document import DocumentCreate, DocumentResponse, DocumentRename
 from .chat_session import ChatSessionCreate, ChatSessionResponse, ChatSessionUpdate, ChatListResponse
 from .chat_cursor import ChatCursor
 from .message import MessageCreate, MessageResponse, MessageUpdate, MessageHistoryResponse, MessageStreamChunk
@@ -20,6 +20,7 @@ __all__ = [
     'ResetPasswordResponse',
     'DocumentCreate',
     'DocumentResponse',
+    'DocumentRename',
     'ChatSessionCreate',
     'ChatSessionResponse',
     'ChatSessionUpdate',

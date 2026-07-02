@@ -28,3 +28,6 @@ class DocumentUpdate(BaseModel):
     content: str | None = None
     title: str | None = None
     status: DocumentStatuses | None = None
+
+class DocumentRename(BaseModel):
+    title: str
