@@ -65,3 +65,12 @@ async def reset_password(
 ):
     await auth_service.reset_password(body)
     return ResetPasswordResponse(message="Password updated successfully")
+
+@router.post('/logout', status_code=200)
+async def logout(response: Response):
+    response.delete_cookie(
+        key='refresh_token',
+        httponly=True,
+        samesite='lax',
+    )
+    return {"message": "Logged out"}
