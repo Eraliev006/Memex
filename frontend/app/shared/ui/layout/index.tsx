@@ -1,0 +1,166 @@
+import { Link, useLocation, useNavigate } from 'react-router'
+import { FileText, MessageSquare, Settings, Network, Brain, LogOut, Sun, Moon, Monitor } from 'lucide-react'
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+} from '~/shared/ui/sidebar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+} from '~/shared/ui/dropdown-menu'
+import { Avatar, AvatarFallback } from '~/shared/ui/avatar'
+import { useState } from 'react'
+import { useAuth } from '~/shared/lib/auth-context'
+import axios from 'axios'
+
+const nav = [
+  { to: '/documents', icon: FileText, label: 'Documents' },
+  { to: '/chat', icon: MessageSquare, label: 'Chat' },
+  { to: '/knowledge-graph', icon: Network, label: 'Graph' },
+  { to: '/settings', icon: Settings, label: 'Settings' },
+]
+
+type Theme = 'light' | 'dark' | 'system'
+
+function useTheme() {
+  const [theme, setThemeState] = useState<Theme>(() => {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    if (prefersDark) document.documentElement.classList.add('dark')
+    return 'system'
+  })
+
+  const setTheme = (t: Theme) => {
+    setThemeState(t)
+    const root = document.documentElement
+    if (t === 'dark') root.classList.add('dark')
+    else if (t === 'light') root.classList.remove('dark')
+    else {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      prefersDark ? root.classList.add('dark') : root.classList.remove('dark')
+    }
+  }
+
+  return { theme, setTheme }
+}
+
+export function AppLayout({ children }: { children: React.ReactNode }) {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { theme, setTheme } = useTheme()
+  const { setAccessToken } = useAuth()
+  const [open, setOpen] = useState(true)
+
+
+  const handleLogout = async () => {
+    try {
+      await axios.post('http://localhost:8000/api/v1/auth/logout', {}, { withCredentials: true })
+    } catch {}
+    setAccessToken(null)
+    navigate('/login', { replace: true })
+  }
+
+  return (
+    <SidebarProvider open={open} onOpenChange={setOpen}>
+      <Sidebar collapsible="icon">
+        <SidebarHeader>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton size="lg" asChild>
+                <Link to="/documents" onClick={(e) => e.stopPropagation()}>
+                  <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                    <Brain className="size-4" />
+                  </div>
+                  <span className="font-semibold">Memex</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarHeader>
+
+        <SidebarContent>
+          <SidebarMenu className="px-2 mt-2">
+            {nav.map(({ to, icon: Icon, label }) => (
+              <SidebarMenuItem key={to}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={location.pathname.startsWith(to)}
+                  tooltip={label}
+                >
+                  <Link to={to} onClick={(e) => e.stopPropagation()}>
+                    <Icon />
+                    <span>{label}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarContent>
+
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <SidebarMenuButton size="lg">
+                    <Avatar className="size-8 rounded-lg">
+                      <AvatarFallback className="rounded-lg">U</AvatarFallback>
+                    </Avatar>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                      <span className="truncate font-medium">Account</span>
+                    </div>
+                  </SidebarMenuButton>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="top" align="start" className="w-48">
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      {theme === 'dark' ? <Moon className="size-4" /> : theme === 'light' ? <Sun className="size-4" /> : <Monitor className="size-4" />}
+                      <span>Theme</span>
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuItem onClick={() => setTheme('light')}>
+                        <Sun className="size-4" /> Light
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTheme('dark')}>
+                        <Moon className="size-4" /> Dark
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setTheme('system')}>
+                        <Monitor className="size-4" /> System
+                      </DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                    <LogOut className="size-4" />
+                    <span>Logout</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </Sidebar>
+
+      <div className="flex flex-col flex-1 min-w-0">
+        <header className="flex h-12 items-center border-b px-4">
+          <SidebarTrigger />
+        </header>
+        <main className="flex-1 overflow-auto">
+          {children}
+        </main>
+      </div>
+    </SidebarProvider>
+  )
+}
