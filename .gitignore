@@ -228,3 +228,14 @@ frontend/node_modules/
 frontend/.react-router/
 frontend/build/
 frontend/.env
+
+# AI assistant / agent config (do not commit)
+.claude/
+.agents/
+.cursor/
+.windsurf/
+**/.claude/
+**/.agents/
+**/.cursor/
+**/.windsurf/
+CLAUDE.md
