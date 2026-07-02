@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Cookie, Depends, Response
 from fastapi.security import OAuth2PasswordRequestForm
 
 from app.api.deps import AuthServiceDep
@@ -49,10 +49,13 @@ async def register(
 
 @router.post('/refresh', status_code=200, response_model=TokenResponse)
 async def refresh(
-    body: RefreshTokenRequest,
     auth_service: AuthServiceDep,
+    refresh_token: Annotated[str | None, Cookie()] = None,
 ):
-    return await auth_service.refresh_tokens(body.refresh_token)
+    if not refresh_token:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=401, detail="No refresh token")
+    return await auth_service.refresh_tokens(refresh_token)
 
 
 @router.post('/reset-password', status_code=200, response_model=ResetPasswordResponse)
