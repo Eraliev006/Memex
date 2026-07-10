@@ -20,6 +20,7 @@ export * from './getMessagesApiV1ChatSessionIdMessagesGetParams';
 export * from './hTTPValidationError';
 export * from './listDocumentsApiV1DocumentGetParams';
 export * from './listSessionsApiV1ChatSessionsGetParams';
+export * from './loginWithGoogle';
 export * from './messageCursor';
 export * from './messageHistoryResponse';
 export * from './messageResponse';

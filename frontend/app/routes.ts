@@ -4,6 +4,7 @@ export default [
   index("routes/home.tsx"),
   route("login", "routes/login.tsx"),
   route("registration", "routes/registration.tsx"),
+  route("auth/google/callback", "routes/auth-google-callback.tsx"),
   layout("routes/_protected.tsx", [
     route("documents", "routes/documents.tsx"),
     route("chat", "routes/chat.tsx"),

@@ -6,9 +6,11 @@ import { getAuth } from '~/shared/api/generated/auth/auth'
 import { Button } from '~/shared/ui/button'
 import { ThemeToggle } from '~/shared/ui/theme-toggle'
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '~/shared/ui/card'
+import { Separator } from '~/shared/ui/separator'
 import { InputGroup, InputGroupInput, InputGroupAddon } from '~/shared/ui/input-group'
 import { User, Lock } from 'lucide-react'
 import { useAuth } from '~/shared/lib/auth-context'
+import { getGoogleOAuthUrl } from '~/shared/lib/google-oauth'
 
 
 const { loginApiV1AuthLoginPost } = getAuth()
@@ -97,6 +99,21 @@ export function LoginPage() {
                 <Link to="/registration">Registration</Link>
             </Button>
             </form>
+
+            <div className="flex items-center gap-3 my-4">
+            <Separator className="flex-1" />
+            <span className="text-xs text-muted-foreground">или</span>
+            <Separator className="flex-1" />
+            </div>
+
+            <Button
+            type="button"
+            variant="outline"
+            className="w-full h-10 rounded-lg"
+            onClick={() => { window.location.href = getGoogleOAuthUrl() }}
+            >
+            Войти через Google
+            </Button>
         </CardContent>
         </Card>
     </div>

@@ -1,7 +1,8 @@
 import axios from 'axios'
+import { API_BASE_URL } from './env'
 
 export const axiosInstance = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -25,6 +26,25 @@ axiosInstance.interceptors.request.use((config) => {
   return config
 })
 
+// Дедупликация: параллельные 401 не должны запускать несколько /auth/refresh —
+// если refresh-токен на бэкенде одноразовый (ротация), второй запрос его "сожжёт".
+let refreshPromise: Promise<string> | null = null
+
+function refreshAccessToken(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post(`${API_BASE_URL}/api/v1/auth/refresh`, {}, { withCredentials: true })
+      .then(({ data }) => {
+        accessToken = data.access_token
+        return data.access_token as string
+      })
+      .finally(() => {
+        refreshPromise = null
+      })
+  }
+  return refreshPromise
+}
+
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -34,13 +54,8 @@ axiosInstance.interceptors.response.use(
       original._retry = true
 
       try {
-        const { data } = await axios.post(
-          'http://localhost:8000/api/v1/auth/refresh',
-          {},
-          { withCredentials: true }
-        )
-        accessToken = data.access_token
-        original.headers.Authorization = `Bearer ${accessToken}`
+        const token = await refreshAccessToken()
+        original.headers.Authorization = `Bearer ${token}`
         return axiosInstance(original)
       } catch {
         accessToken = null

@@ -3,7 +3,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useNavigate, Link } from 'react-router'
 import { getAuth } from '~/shared/api/generated/auth/auth'
-import { setAccessToken } from '~/shared/api/config/axios-instance'
 import { Button } from '~/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '~/shared/ui/card'
 import { InputGroup, InputGroupInput, InputGroupAddon } from '~/shared/ui/input-group'
@@ -24,6 +23,7 @@ type RegistrationForm = z.infer<typeof registrationSchema>
 
 export function RegistrationPage() {
   const navigate = useNavigate()
+  const { setAccessToken } = useAuth()
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<RegistrationForm>({
     resolver: zodResolver(registrationSchema),
@@ -31,7 +31,6 @@ export function RegistrationPage() {
 
   const onSubmit = async (data: RegistrationForm) => {
     try {
-      const { setAccessToken } = useAuth()
       await registerApiV1AuthRegisterPost({
         name: data.name,
         email: data.email,

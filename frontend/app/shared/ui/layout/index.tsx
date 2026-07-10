@@ -24,7 +24,11 @@ import {
 import { Avatar, AvatarFallback } from '~/shared/ui/avatar'
 import { useState } from 'react'
 import { useAuth } from '~/shared/lib/auth-context'
+import { useMe } from '~/shared/lib/use-me'
+import { useTheme } from '~/shared/lib/use-theme'
+import { API_BASE_URL } from '~/shared/api/config/env'
 import axios from 'axios'
+
 
 const nav = [
   { to: '/documents', icon: FileText, label: 'Documents' },
@@ -33,47 +37,25 @@ const nav = [
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 
-type Theme = 'light' | 'dark' | 'system'
-
-function useTheme() {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    if (prefersDark) document.documentElement.classList.add('dark')
-    return 'system'
-  })
-
-  const setTheme = (t: Theme) => {
-    setThemeState(t)
-    const root = document.documentElement
-    if (t === 'dark') root.classList.add('dark')
-    else if (t === 'light') root.classList.remove('dark')
-    else {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      prefersDark ? root.classList.add('dark') : root.classList.remove('dark')
-    }
-  }
-
-  return { theme, setTheme }
-}
-
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation()
   const navigate = useNavigate()
   const { theme, setTheme } = useTheme()
   const { setAccessToken } = useAuth()
   const [open, setOpen] = useState(true)
+  const { data: me } = useMe()
 
 
   const handleLogout = async () => {
     try {
-      await axios.post('http://localhost:8000/api/v1/auth/logout', {}, { withCredentials: true })
+      await axios.post(`${API_BASE_URL}/api/v1/auth/logout`, {}, { withCredentials: true })
     } catch {}
     setAccessToken(null)
     navigate('/login', { replace: true })
   }
 
   return (
-    <SidebarProvider open={open} onOpenChange={setOpen}>
+    <SidebarProvider open={open} onOpenChange={setOpen} className="h-dvh overflow-hidden">
       <Sidebar collapsible="icon">
         <SidebarHeader>
           <SidebarMenu>
@@ -116,10 +98,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <DropdownMenuTrigger asChild>
                   <SidebarMenuButton size="lg">
                     <Avatar className="size-8 rounded-lg">
-                      <AvatarFallback className="rounded-lg">U</AvatarFallback>
+                      <AvatarFallback className="rounded-lg">
+                        {me?.name?.charAt(0).toUpperCase() ?? 'U'}
+                      </AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-medium">Account</span>
+                      <span className="truncate font-medium">{me?.name ?? 'Account'}</span>
+                      <span className="truncate text-xs text-muted-foreground">{me?.email ?? ''}</span>
                     </div>
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
@@ -153,11 +138,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
 
-      <div className="flex flex-col flex-1 min-w-0">
-        <header className="flex h-12 items-center border-b px-4">
+      <div className="flex flex-col flex-1 min-w-0 min-h-0">
+        <header className="flex h-12 items-center border-b px-4 shrink-0">
           <SidebarTrigger />
         </header>
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 min-h-0 overflow-auto">
           {children}
         </main>
       </div>

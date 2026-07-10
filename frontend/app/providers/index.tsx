@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useEffect, useState, type ReactNode } from 'react'
 import { AuthProvider, useAuth } from '~/shared/lib/auth-context'
-import { setAccessToken } from '~/shared/api/config/axios-instance'
+import { API_BASE_URL } from '~/shared/api/config/env'
 import { TooltipProvider } from '~/shared/ui/tooltip'
 import axios from 'axios'
 
@@ -19,7 +19,7 @@ function AppInitializer({ children }: { children: ReactNode }) {
   const { setAccessToken } = useAuth()
 
   useEffect(() => {
-    axios.post('http://localhost:8000/api/v1/auth/refresh', {}, { withCredentials: true })
+    axios.post(`${API_BASE_URL}/api/v1/auth/refresh`, {}, { withCredentials: true })
       .then((res) => {
         setAccessToken(res.data.access_token)
       })

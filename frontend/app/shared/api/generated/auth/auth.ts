@@ -6,6 +6,7 @@
  */
 import type {
   BodyLoginApiV1AuthLoginPost,
+  LoginWithGoogle,
   ResetPasswordRequest,
   ResetPasswordResponse,
   TokenResponse,
@@ -48,6 +49,19 @@ if(bodyLoginApiV1AuthLoginPost.client_secret !== undefined && bodyLoginApiV1Auth
       );
     }
   /**
+ * @summary Login With Google
+ */
+const loginWithGoogleApiV1AuthLoginGooglePost = (
+    loginWithGoogle: LoginWithGoogle,
+ ) => {
+      return axiosInstance<TokenResponse>(
+      {url: `/api/v1/auth/login/google`, method: 'POST',
+      headers: {'Content-Type': 'application/json', },
+      data: loginWithGoogle
+    },
+      );
+    }
+  /**
  * @summary Register
  */
 const registerApiV1AuthRegisterPost = (
@@ -85,6 +99,17 @@ const resetPasswordApiV1AuthResetPasswordPost = (
       );
     }
   /**
+ * @summary Get Me
+ */
+const getMeApiV1AuthMeGet = (
+
+ ) => {
+      return axiosInstance<UserResponse>(
+      {url: `/api/v1/auth/me`, method: 'GET'
+    },
+      );
+    }
+  /**
  * @summary Logout
  */
 const logoutApiV1AuthLogoutPost = (
@@ -95,9 +120,11 @@ const logoutApiV1AuthLogoutPost = (
     },
       );
     }
-  return {loginApiV1AuthLoginPost,registerApiV1AuthRegisterPost,refreshApiV1AuthRefreshPost,resetPasswordApiV1AuthResetPasswordPost,logoutApiV1AuthLogoutPost}};
+  return {loginApiV1AuthLoginPost,loginWithGoogleApiV1AuthLoginGooglePost,registerApiV1AuthRegisterPost,refreshApiV1AuthRefreshPost,resetPasswordApiV1AuthResetPasswordPost,getMeApiV1AuthMeGet,logoutApiV1AuthLogoutPost}};
 export type LoginApiV1AuthLoginPostResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['loginApiV1AuthLoginPost']>>>
+export type LoginWithGoogleApiV1AuthLoginGooglePostResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['loginWithGoogleApiV1AuthLoginGooglePost']>>>
 export type RegisterApiV1AuthRegisterPostResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['registerApiV1AuthRegisterPost']>>>
 export type RefreshApiV1AuthRefreshPostResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['refreshApiV1AuthRefreshPost']>>>
 export type ResetPasswordApiV1AuthResetPasswordPostResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['resetPasswordApiV1AuthResetPasswordPost']>>>
+export type GetMeApiV1AuthMeGetResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['getMeApiV1AuthMeGet']>>>
 export type LogoutApiV1AuthLogoutPostResult = NonNullable<Awaited<ReturnType<ReturnType<typeof getAuth>['logoutApiV1AuthLogoutPost']>>>
