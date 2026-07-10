@@ -1,4 +1,5 @@
-// chat.tsx
+import { ChatPage } from '~/pages/chat'
+
 export default function ChatRoute() {
-  return <div>Chat Page</div>
+  return <ChatPage />
 }

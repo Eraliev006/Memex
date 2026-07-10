@@ -21,11 +21,11 @@
 - [✅] `providers/llm/protocol.py` — `LLMProtocol` (stream + complete)
 - [✅] `providers/llm/anthropic.py` — `AnthropicProvider` - Groq
 - [✅] `get_llm_provider()` в `core/providers.py`
-- [ ] `status` поле в `MessageCreate` (`schemas/message.py`) - зачем?
-- [ ] Реализовать `ChatService` (`services/chat_service.py`)
-- [ ] Создать `routes/chat.py`
-- [ ] Зарегистрировать роут в `api/main.py`
-- [ ] DI в `deps.py`
+- [✅ ] `status` поле в `MessageCreate` (`schemas/message.py`) - зачем?
+- [ ✅] Реализовать `ChatService` (`services/chat_service.py`)
+- [ ✅] Создать `routes/chat.py`
+- [ ✅] Зарегистрировать роут в `api/main.py`
+- [✅ ] DI в `deps.py`
 - [ ] Smoke test: curl → SSE stream с источниками
 
 ### Шаг 3 — Web search
