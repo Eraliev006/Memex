@@ -1,5 +1,5 @@
-from .auth_schemas import RegisterRequest, LoginWithPasswordRequest, TokenResponse, RefreshTokenRequest, TokenPair
-from .user import UserCreate, UserResponse
+from .auth_schemas import RegisterRequest, LoginWithPasswordRequest, TokenResponse, RefreshTokenRequest, TokenPair, LoginWithGoogle
+from .user import UserCreate, UserResponse, UserCreateWithGoogle
 from .reset_password import ResetPasswordRequest, ResetPasswordResponse
 from .document import DocumentCreate, DocumentResponse, DocumentRename
 from .chat_session import ChatSessionCreate, ChatSessionResponse, ChatSessionUpdate, ChatListResponse
@@ -34,4 +34,6 @@ __all__ = [
     'MessageCursor',
     'SearchResult',
     'SearchResultItem',
+    'LoginWithGoogle',
+    'UserCreateWithGoogle',
 ]

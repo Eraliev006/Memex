@@ -1,8 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.user import User
-from app.schemas import UserCreate
+from app.schemas import UserCreate, UserCreateWithGoogle
 from sqlalchemy import select
+
 
 
 class UserRepository:
@@ -59,6 +60,19 @@ class UserRepository:
         await self.db.flush()
         await self.db.refresh(db_user)
         return db_user
+    
+    async def get_by_google_id(self, google_id: str) -> User | None:
+        stmt = select(User).where(User.google_id == google_id)
         
+        result = await self.db.execute(stmt)
         
+        return result.scalar_one_or_none()
+        
+    
+    async def create_google_user(self, user_in: UserCreateWithGoogle) -> User:
+        db_user = User(**user_in.model_dump())
+        self.db.add(db_user)
+        await self.db.flush()
+        await self.db.refresh(db_user)
+        return db_user
     

@@ -16,9 +16,10 @@ class User(Base):
     __tablename__ = "users"
     
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, index=True, default=uuid.uuid4)
+    google_id: Mapped[str] = mapped_column(unique=True, index=True, nullable=True)
     name: Mapped[str] = mapped_column(nullable=False)
     email: Mapped[str] = mapped_column(unique=True, index=True, nullable=False)
-    hashed_password: Mapped[str] = mapped_column(nullable=False)
+    hashed_password: Mapped[str | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now(),nullable=False)
     
     documents: Mapped[list['Document']] = relationship(back_populates='user')

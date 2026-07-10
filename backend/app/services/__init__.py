@@ -10,6 +10,7 @@ from .qdrant import QdrantService
 from .search_service import SearchService
 from .message import MessageService
 from .chat_session_service import ChatSessionService
+from .google_auth import GoogleAuthService
 
 __all__ = [
     'AuthService',
@@ -24,4 +25,5 @@ __all__ = [
     'SearchService',
     'MessageService',
     'ChatSessionService',
+    'GoogleAuthService'
 ]

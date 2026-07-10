@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 
-from app.core import settings
+from app.core import settings, redis_client
 from app.core.providers import get_embedding_provider
 from app.api.main import api_router
 from app.services import EmbeddingService, QdrantService, SearchService
@@ -20,15 +20,21 @@ async def lifespan(app: FastAPI):
     qdrant_service = QdrantService()
     await qdrant_service.ensure_collection()
     logger.info("Qdrant ready")
+    
+    logger.info("Connection to Redis")
+    await redis_client.connect()
 
     app.state.search_service = SearchService(
         embedding_service=embedding_service,
         qdrant_service=qdrant_service,
     )
+    app.state.redis_client = redis_client
 
     logger.info("Server startup complete")
     yield
 
+    logger.info("Disconnecting from Redis")
+    await redis_client.disconnect()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,

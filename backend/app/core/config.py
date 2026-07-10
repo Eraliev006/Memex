@@ -71,6 +71,10 @@ class Settings(BaseSettings):
     
     VOYAGEAI_API_KEY: str
     
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_SECRET: str
+    GOOGLE_REDIRECT_URI: str
+    
     
     @computed_field  # type: ignore[prop-decorator]
     @property

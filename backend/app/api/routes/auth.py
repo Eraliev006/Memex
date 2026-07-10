@@ -1,9 +1,9 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, Response
+from fastapi import APIRouter, Cookie, Depends, Response, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.api.deps import AuthServiceDep
+from app.api.deps import AuthServiceDep, CurrentUserDep
 from app.schemas import (
     UserCreate,
     UserResponse,
@@ -12,6 +12,8 @@ from app.schemas import (
     LoginWithPasswordRequest,
     TokenResponse,
     RefreshTokenRequest,
+    TokenPair,
+    LoginWithGoogle
 )
 
 
@@ -41,6 +43,21 @@ async def login(
     )
     return TokenResponse(access_token=tokens.access_token)
 
+
+@router.post('/login/google', status_code=200, response_model=TokenResponse)
+async def login_with_google(response: Response, auth_service: AuthServiceDep, code: LoginWithGoogle):
+    tokens = await auth_service.login_with_google(code)
+    
+    response.set_cookie(
+        key='refresh_token',
+        value=tokens.refresh_token,
+        httponly=True,
+        secure=False, # Change in Prod
+        samesite='lax',
+        max_age=60 * 60 * 24 * 7
+    )
+    return TokenResponse(access_token=tokens.access_token)
+
 @router.post('/register', status_code=201, response_model=UserResponse)
 async def register(
     user: UserCreate,
@@ -50,12 +67,23 @@ async def register(
 @router.post('/refresh', status_code=200, response_model=TokenResponse)
 async def refresh(
     auth_service: AuthServiceDep,
+    response: Response,
     refresh_token: Annotated[str | None, Cookie()] = None,
 ):
     if not refresh_token:
-        from fastapi import HTTPException
         raise HTTPException(status_code=401, detail="No refresh token")
-    return await auth_service.refresh_tokens(refresh_token)
+    
+    tokens: TokenPair = await auth_service.refresh_tokens(refresh_token)
+    
+    response.set_cookie(
+        key='refresh_token',
+        value=tokens.refresh_token,
+        httponly=True,
+        secure=False,
+        samesite='lax',
+        max_age=60 * 60 * 24 * 7
+    )
+    return TokenResponse(access_token=tokens.access_token)
 
 
 @router.post('/reset-password', status_code=200, response_model=ResetPasswordResponse)
@@ -66,11 +94,16 @@ async def reset_password(
     await auth_service.reset_password(body)
     return ResetPasswordResponse(message="Password updated successfully")
 
+@router.get('/me', status_code=200, response_model=UserResponse)
+async def get_me(current_user: CurrentUserDep):
+    return current_user
+
 @router.post('/logout', status_code=200)
-async def logout(response: Response):
+async def logout(response: Response, auth_service: AuthServiceDep,  refresh_token: Annotated[str | None, Cookie()] = None):
     response.delete_cookie(
         key='refresh_token',
         httponly=True,
         samesite='lax',
     )
+    await auth_service.logout(refresh_token)
     return {"message": "Logged out"}

@@ -15,6 +15,8 @@ from app.services.chat_service import ChatService
 from app.services.chat_session_service import ChatSessionService
 from app.services.llm import LLMService
 from app.services.message import MessageService
+from app.core.redis_client import RedisClient
+from app.services.google_auth import GoogleAuthService
 
 
 @dataclass
@@ -37,9 +39,23 @@ SessionDep = Annotated[AsyncSession, Depends(get_db)]
 TokenDep = Annotated[str, Depends(oauth2_scheme)]
 
 
+# def get_search_service(request: Request) -> SearchService:
+#     return request.app.state.search_service
+
+#Redis client
+def get_redis_client(request: Request) -> RedisClient:
+    return request.app.state.redis_client
+RedisClientDep = Annotated[RedisClient, Depends(get_redis_client)]
+
+# GOOGLE AUTH SERVICE DI
+
+async def get_google_auth_service() -> GoogleAuthService:
+    return GoogleAuthService()
+GoogleAuthDep = Annotated[GoogleAuthService, Depends(get_google_auth_service)]
+
 # AUTH SERVICE DI
-async def get_auth_service(db: SessionDep) -> AuthService:
-    return AuthService(db)
+async def get_auth_service(db: SessionDep, redis_client: RedisClientDep, google_auth: GoogleAuthDep) -> AuthService:
+    return AuthService(db, redis=redis_client, google_auth=google_auth)
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
 
 
