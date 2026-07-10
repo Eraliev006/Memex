@@ -11,6 +11,8 @@ from app.models.document import Document
 from app.enums.document import DocumentStatuses
 
 
+ALLOWED_EXTENSIONS = {'pdf', 'md', 'txt', 'docx'}
+
 class DocumentService:
     def __init__(self, db: AsyncSession, s3_storage: S3Storage):
         self._db = db
@@ -19,7 +21,14 @@ class DocumentService:
         self._qdrant = QdrantService()
 
     async def upload_document(self, document: UploadFile, user_id: uuid.UUID):
-        file_extension = document.filename.split(".")[-1] if document.filename else "pdf"
+        file_extension = document.filename.split(".")[-1].lower() if document.filename else ''
+        
+        if file_extension not in ALLOWED_EXTENSIONS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"File type .{file_extension} is not supported. Allowed: {', '.join(ALLOWED_EXTENSIONS)}"
+            )
+            
         storage_path = f'documents/{uuid.uuid4()}.{file_extension}'
         
         file = await document.read()
@@ -77,12 +86,20 @@ class DocumentService:
     async def delete_document(self, document_id: uuid.UUID, user_id: uuid.UUID) -> None:
         document = await self._get_owned_document(document_id, user_id)
 
-        await self._qdrant.delete_by_document_id(document_id)
-        await self._s3_client.delete_documents(document.storage_path)
-
         try:
             await self._repo.delete_document(document_id)
+            
             await self._db.commit()
         except Exception:
             await self._db.rollback()
             raise
+        try:
+            await self._qdrant.delete_by_document_id(document_id)
+            
+        except Exception:
+            pass #TODO loggin
+        
+        try:
+            await self._s3_client.delete_documents(document.storage_path)
+        except Exception:
+            pass #TODO loggin
