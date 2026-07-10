@@ -1,13 +1,13 @@
-import { useState } from 'react'
 import { useDocuments } from '~/entities/document/model/use-documents'
 import { useDeleteDocument } from '~/entities/document/model/use-delete-document'
 import { DocumentCard } from '~/entities/document/ui/document-card'
 import { UploadZone } from '~/features/upload-document/ui/upload-zone'
+import { ErrorState } from '~/shared/ui/error-state'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 
 export function DocumentsPage() {
-  const { data: documents, isLoading } = useDocuments()
+  const { data: documents, isLoading, isError, refetch } = useDocuments()
   const { mutate: deleteDocument } = useDeleteDocument()
   const queryClient = useQueryClient()
 
@@ -38,7 +38,9 @@ export function DocumentsPage() {
 
       <UploadZone />
 
-      {isLoading ? (
+      {isError ? (
+        <ErrorState message="Failed to load documents" onRetry={() => refetch()} />
+      ) : isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="h-32 rounded-xl bg-muted animate-pulse" />

@@ -4,6 +4,17 @@ import { Button } from '~/shared/ui/button'
 import { cn } from '~/shared/lib/utils'
 import type { DocumentResponse } from '~/shared/api/generated/model'
 import { getStatusColor, getStatusLabel } from '~/entities/document/model/types'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '~/shared/ui/alert-dialog'
 
 function getFileIcon(filename: string) {
   const ext = filename.split('.').pop()?.toLowerCase()
@@ -34,19 +45,40 @@ export function DocumentCard({ document, onDelete }: DocumentCardProps) {
               <p className="text-xs text-muted-foreground truncate">{document.original_filename}</p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-            onClick={() => onDelete(document.id)}
-          >
-            <Trash2 className="size-4 text-destructive" />
-          </Button>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+              >
+                <Trash2 className="size-4 text-destructive" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete document?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  "{document.title}" will be permanently deleted including all its vectors. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => onDelete(document.id)}
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
 
         <div className="flex items-center justify-between">
-          <span className={cn('text-xs font-medium', getStatusColor(status as any))}>
-            {getStatusLabel(status as any)}
+          <span className={cn('text-xs font-medium', getStatusColor(status))}>
+            {getStatusLabel(status)}
           </span>
           <span className="text-xs text-muted-foreground">
             {new Date(document.created_at).toLocaleDateString()}

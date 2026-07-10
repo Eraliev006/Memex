@@ -1,6 +1,6 @@
-export type DocumentStatus = 'ready' | 'processing' | 'pending' | 'failed'
+import type { DocumentStatuses } from '~/shared/api/generated/model'
 
-export function getStatusColor(status: DocumentStatus): string {
+export function getStatusColor(status: DocumentStatuses): string {
   switch (status) {
     case 'ready': return 'text-green-500'
     case 'processing': return 'text-yellow-500'
@@ -9,7 +9,7 @@ export function getStatusColor(status: DocumentStatus): string {
   }
 }
 
-export function getStatusLabel(status: DocumentStatus): string {
+export function getStatusLabel(status: DocumentStatuses): string {
   switch (status) {
     case 'ready': return 'Ready'
     case 'processing': return 'Processing'
