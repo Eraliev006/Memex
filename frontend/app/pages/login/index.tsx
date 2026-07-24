@@ -4,13 +4,11 @@ import { z } from 'zod'
 import { useNavigate, Link } from 'react-router'
 import { getAuth } from '~/shared/api/generated/auth/auth'
 import { Button } from '~/shared/ui/button'
-import { ThemeToggle } from '~/shared/ui/theme-toggle'
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '~/shared/ui/card'
+import { Input } from '~/shared/ui/input'
 import { Separator } from '~/shared/ui/separator'
-import { InputGroup, InputGroupInput, InputGroupAddon } from '~/shared/ui/input-group'
-import { User, Lock } from 'lucide-react'
+import { AuthLayout } from '~/shared/ui/auth-layout'
+import { GoogleButton } from '~/shared/ui/google-button'
 import { useAuth } from '~/shared/lib/auth-context'
-import { getGoogleOAuthUrl } from '~/shared/lib/google-oauth'
 
 
 const { loginApiV1AuthLoginPost } = getAuth()
@@ -29,93 +27,61 @@ export function LoginPage() {
     resolver: zodResolver(loginSchema),
   })
 
-    const { setAccessToken } = useAuth()
+  const { setAccessToken } = useAuth()
 
-    const onSubmit = async (data: LoginForm) => {
+  const onSubmit = async (data: LoginForm) => {
     try {
-        const response = await loginApiV1AuthLoginPost({
+      const response = await loginApiV1AuthLoginPost({
         username: data.username,
         password: data.password,
         grant_type: 'password',
         scope: '',
-        })
-        setAccessToken(response.data.access_token)
-        navigate('/documents')
+      })
+      setAccessToken(response.data.access_token)
+      navigate('/documents')
     } catch (e) {
-        console.error('Login failed', e)
+      console.error('Login failed', e)
     }
-    }
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <div className="absolute top-4 right-4">
-        <ThemeToggle />
+    <AuthLayout
+      title="С возвращением"
+      subtitle="Войдите в Memex"
+      footer={
+        <p className="text-center text-sm text-muted-foreground">
+          Ещё нет аккаунта?{' '}
+          <Link to="/registration" className="font-semibold text-foreground hover:underline">
+            Зарегистрироваться
+          </Link>
+        </p>
+      }
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3.5">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-label-foreground">Email</label>
+          <Input type="email" placeholder="you@example.com" className="h-10 rounded-lg" {...register('username')} />
+          {errors.username && <span className="text-xs text-destructive">{errors.username.message}</span>}
         </div>
-        <Card className="w-full max-w-sm">
-        <CardHeader>
-            <CardTitle className="text-center text-2xl">Login</CardTitle>
-        </CardHeader>
-        <CardContent>
-            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-            <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium">Email</label>
-                <InputGroup className="h-10">
-                <InputGroupInput
-                    type="email"
-                    placeholder="Enter email"
-                    {...register('username')}
-                />
-                <InputGroupAddon align="inline-end">
-                    <User className="size-4" />
-                </InputGroupAddon>
-                </InputGroup>
-                {errors.username && (
-                <span className="text-xs text-red-500">{errors.username.message}</span>
-                )}
-            </div>
 
-            <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium">Password</label>
-                <InputGroup className="h-10">
-                <InputGroupInput
-                    type="password"
-                    placeholder="Enter your password"
-                    {...register('password')}
-                />
-                <InputGroupAddon align="inline-end">
-                    <Lock className="size-4" />
-                </InputGroupAddon>
-                </InputGroup>
-                {errors.password && (
-                <span className="text-xs text-red-500">{errors.password.message}</span>
-                )}
-            </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-xs font-medium text-label-foreground">Пароль</label>
+          <Input type="password" placeholder="Минимум 6 символов" className="h-10 rounded-lg" {...register('password')} />
+          {errors.password && <span className="text-xs text-destructive">{errors.password.message}</span>}
+        </div>
 
-            <Button type="submit" className="w-full h-10 rounded-lg mt-2" disabled={isSubmitting}>
-                {isSubmitting ? 'Loading...' : 'Login'}
-            </Button>
+        <Button type="submit" className="w-full h-10 rounded-lg mt-1.5" disabled={isSubmitting}>
+          {isSubmitting ? 'Вход...' : 'Войти'}
+        </Button>
+      </form>
 
-            <Button variant="link" asChild className="w-full">
-                <Link to="/registration">Registration</Link>
-            </Button>
-            </form>
+      <div className="flex items-center gap-3">
+        <Separator className="flex-1" />
+        <span className="text-xs text-faint-foreground">или</span>
+        <Separator className="flex-1" />
+      </div>
 
-            <div className="flex items-center gap-3 my-4">
-            <Separator className="flex-1" />
-            <span className="text-xs text-muted-foreground">или</span>
-            <Separator className="flex-1" />
-            </div>
-
-            <Button
-            type="button"
-            variant="outline"
-            className="w-full h-10 rounded-lg"
-            onClick={() => { window.location.href = getGoogleOAuthUrl() }}
-            >
-            Войти через Google
-            </Button>
-        </CardContent>
-        </Card>
-    </div>
-    )
+      <GoogleButton />
+    </AuthLayout>
+  )
 }
