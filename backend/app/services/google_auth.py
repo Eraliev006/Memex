@@ -33,7 +33,7 @@ class GoogleAuthService:
                     "grant_type": "authorization_code",
                 },
             )
-            print(response.json())
+            
             if response.status_code != 200:
                 raise HTTPException(status_code=400, detail="Failed to exchange code")
             return response.json()
