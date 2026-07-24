@@ -28,6 +28,7 @@ dependencies = [
     "groq>=1.5.0",
     "voyageai>=0.4.1",
     "cryptography>=49.0.0",
+    "ratelimiter",
 ]
 
 [dependency-groups]
@@ -42,6 +43,7 @@ dev = [
 torch = [
   { index = "pytorch-cpu" }
 ]
+ratelimiter = { git = "https://github.com/Eraliev006/ratelimiting.git" }
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
