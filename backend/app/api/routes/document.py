@@ -1,18 +1,23 @@
 from uuid import UUID
 
-from fastapi import APIRouter, File, Query, UploadFile
+from fastapi import APIRouter, File, Query, Request, UploadFile
+
+from app.api.deps import get_limiter
+from ratelimiter.keys.jwt import get_user_id
 
 from app.api.deps import CurrentUserDep, DocumentServiceDep
 from app.schemas import DocumentResponse, DocumentRename
 
-
+limiter = get_limiter()
 router = APIRouter(tags=['document'], prefix='/document')
 
 @router.post('/upload',
              status_code=201,
              response_model=DocumentResponse,
              summary="Upload documents to storage")
+@limiter.limit("5/minute", key_func=get_user_id)
 async def upload_documents(
+    request: Request,
     document_service: DocumentServiceDep,
     current_user: CurrentUserDep,
     document: UploadFile = File(...),

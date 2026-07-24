@@ -18,6 +18,12 @@ from app.services.message import MessageService
 from app.core.redis_client import RedisClient
 from app.services.google_auth import GoogleAuthService
 
+from ratelimiter.limiter import RateLimiter
+from ratelimiter.algorithms.token_bucket import TokenBucket
+from ratelimiter.storage.redis_storage import RedisStorage
+
+from app.core import redis_client
+
 
 @dataclass
 class TokenData:
@@ -47,6 +53,18 @@ def get_redis_client(request: Request) -> RedisClient:
     return request.app.state.redis_client
 RedisClientDep = Annotated[RedisClient, Depends(get_redis_client)]
 
+
+_limiter_instance: RateLimiter | None = None
+
+def get_limiter() -> RateLimiter:
+    global _limiter_instance
+    if _limiter_instance is None:
+        _limiter_instance = RateLimiter(
+            algorithm=TokenBucket(),
+            storage=RedisStorage(lambda: redis_client.client, expire_time=3600),
+        )
+    return _limiter_instance
+
 # GOOGLE AUTH SERVICE DI
 
 async def get_google_auth_service() -> GoogleAuthService:
@@ -71,7 +89,7 @@ DocumentServiceDep = Annotated[DocumentService, Depends(get_document_service)]
 
 
 # CURRENT USER DEP
-async def get_current_user(db: SessionDep, token: TokenDep) -> User:
+async def get_current_user(request: Request, db: SessionDep, token: TokenDep) -> User:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -99,6 +117,7 @@ async def get_current_user(db: SessionDep, token: TokenDep) -> User:
     if user is None:
         raise credentials_exception
 
+    request.state.user_id = user.id
     return user
 
 CurrentUserDep = Annotated[User, Depends(get_current_user)]

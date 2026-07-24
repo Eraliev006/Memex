@@ -7,6 +7,7 @@ from loguru import logger
 from app.core import settings, redis_client
 from app.core.providers import get_embedding_provider
 from app.api.main import api_router
+from app.api.deps import get_limiter
 from app.services import EmbeddingService, QdrantService, SearchService
 
 
@@ -23,6 +24,8 @@ async def lifespan(app: FastAPI):
     
     logger.info("Connection to Redis")
     await redis_client.connect()
+    
+    get_limiter()
 
     app.state.search_service = SearchService(
         embedding_service=embedding_service,
@@ -50,3 +53,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# в main.py
+from fastapi import Request
+from fastapi.responses import JSONResponse
+from ratelimiter import RateLimitExceeded
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    headers = {}
+    if exc.retry_after is not None:
+        headers["Retry-After"] = str(int(exc.retry_after) + 1)
+    return JSONResponse(
+        status_code=429,
+        content={"detail": str(exc)},
+        headers=headers,
+    )
