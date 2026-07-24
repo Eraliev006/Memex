@@ -4,7 +4,7 @@ import type { MessageResponse } from '~/shared/api/generated/model'
 import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
 import rehypeSanitize from 'rehype-sanitize'
-import { FileText, ChevronDown, ChevronUp } from 'lucide-react'
+import { FileText } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -35,7 +35,6 @@ interface MessageBubbleProps {
 
 export const MessageBubble = memo(function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === 'user'
-  const [showSources, setShowSources] = useState(false)
   const [selectedSource, setSelectedSource] = useState<Source | null>(null)
   const sources = message.sources as Source[] | null
   const isMobile = useIsMobile()
@@ -47,7 +46,7 @@ export const MessageBubble = memo(function MessageBubble({ message }: MessageBub
       <div
         className={cn(
           'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium',
-          isUser ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+          isUser ? 'bg-invert-bg text-invert-foreground' : 'bg-muted text-muted-foreground'
         )}
       >
         {isUser ? 'U' : 'AI'}
@@ -58,7 +57,7 @@ export const MessageBubble = memo(function MessageBubble({ message }: MessageBub
           className={cn(
             'rounded-2xl px-4 py-3 text-sm',
             isUser
-              ? 'bg-primary text-primary-foreground rounded-tr-sm'
+              ? 'bg-invert-bg text-invert-foreground rounded-tr-sm'
               : 'bg-muted text-foreground rounded-tl-sm'
           )}
         >
@@ -75,39 +74,18 @@ export const MessageBubble = memo(function MessageBubble({ message }: MessageBub
         </div>
 
         {!isUser && sources && sources.length > 0 && (
-          <div className="flex flex-col gap-1 w-full">
-            <button
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors w-fit"
-              onClick={() => setShowSources(!showSources)}
-            >
-              <FileText className="size-3" />
-              {sources.length} source{sources.length > 1 ? 's' : ''}
-              {showSources ? <ChevronUp className="size-3" /> : <ChevronDown className="size-3" />}
-            </button>
-
-            {showSources && (
-              <div className="flex flex-col gap-2 w-full">
-                {sources.map((source, i) => (
-                  <div
-                    key={i}
-                    className="rounded-lg border bg-background px-3 py-2 text-xs flex flex-col gap-1 cursor-pointer hover:bg-muted/50 transition-colors"
-                    onClick={() => setSelectedSource(source)}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium truncate">
-                        {source.document_title || 'Document'}
-                      </span>
-                      <span className="text-muted-foreground shrink-0">
-                        {Math.round((source.score ?? 0) * 100)}% match
-                      </span>
-                    </div>
-                    <p className="text-muted-foreground line-clamp-3">
-                      {stripHtml(source.text)}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
+          <div className="flex flex-wrap gap-1.5">
+            {sources.map((source, i) => (
+              <button
+                key={i}
+                onClick={() => setSelectedSource(source)}
+                className="flex items-center gap-1.5 text-[11.5px] px-2.5 py-1 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors whitespace-nowrap"
+              >
+                <FileText className="size-3" />
+                {source.document_title || 'Документ'}
+                {source.chunk_index != null && ` · чанк ${source.chunk_index}`}
+              </button>
+            ))}
           </div>
         )}
       </div>
@@ -126,11 +104,11 @@ export const MessageBubble = memo(function MessageBubble({ message }: MessageBub
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
               <FileText className="size-4" />
-              {selectedSource?.document_title || 'Document'}
+              {selectedSource?.document_title || 'Документ'}
             </SheetTitle>
             {selectedSource?.score != null && (
               <p className="text-xs text-muted-foreground">
-                {Math.round(selectedSource.score * 100)}% match
+                {Math.round(selectedSource.score * 100)}% совпадение
               </p>
             )}
           </SheetHeader>

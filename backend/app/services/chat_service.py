@@ -83,6 +83,8 @@ class ChatService:
                         "document_id": str(c.document_id),
                         "text": c.text,
                         "score": c.score,
+                        "document_title": c.metadata.get("document_title"),
+                        "chunk_index": c.metadata.get("chunk_index"),
                     }
                     for c in chunks
                 ]
