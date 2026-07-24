@@ -1,4 +1,5 @@
-// settings.tsx
+import { SettingsPage } from '~/pages/settings'
+
 export default function SettingsRoute() {
-  return <div>Settings Page</div>
+  return <SettingsPage />
 }
