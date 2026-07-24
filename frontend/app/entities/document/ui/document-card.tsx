@@ -1,9 +1,9 @@
-import { FileText, FileImage, File, Trash2 } from 'lucide-react'
+import { FileText, FileImage, File, MoreHorizontal } from 'lucide-react'
 import { Card, CardContent } from '~/shared/ui/card'
 import { Button } from '~/shared/ui/button'
 import { cn } from '~/shared/lib/utils'
 import type { DocumentResponse } from '~/shared/api/generated/model'
-import { getStatusColor, getStatusLabel } from '~/entities/document/model/types'
+import { getStatusBadgeClass, getStatusLabel } from '~/entities/document/model/types'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,63 +33,52 @@ export function DocumentCard({ document, onDelete }: DocumentCardProps) {
   const status = document.status
 
   return (
-    <Card className="group relative hover:shadow-md transition-shadow">
-      <CardContent className="p-4 flex flex-col gap-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="bg-muted rounded-lg p-2 shrink-0">
-              <Icon className="size-5 text-muted-foreground" />
-            </div>
-            <div className="min-w-0">
-              <p className="font-medium text-sm truncate">{document.title}</p>
-              <p className="text-xs text-muted-foreground truncate">{document.original_filename}</p>
-            </div>
+    <Card className="rounded-2xl">
+      <CardContent className="p-4.5 flex flex-col gap-3">
+        <div className="flex items-start justify-between">
+          <div className="bg-muted rounded-[10px] size-9.5 flex items-center justify-center shrink-0">
+            <Icon className="size-4.5 text-muted-foreground" />
           </div>
 
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-              >
-                <Trash2 className="size-4 text-destructive" />
+              <Button variant="ghost" size="icon" className="size-7 -mt-0.5 -mr-1 text-faint-foreground">
+                <MoreHorizontal className="size-4" />
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Delete document?</AlertDialogTitle>
+                <AlertDialogTitle>Удалить документ?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  "{document.title}" will be permanently deleted including all its vectors. This action cannot be undone.
+                  «{document.title}» будет удалён безвозвратно вместе со всеми векторами. Это действие нельзя отменить.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel>Отмена</AlertDialogCancel>
                 <AlertDialogAction
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   onClick={() => onDelete(document.id)}
                 >
-                  Delete
+                  Удалить
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
         </div>
 
+        <div className="flex flex-col gap-0.5 min-w-0">
+          <p className="font-semibold text-sm truncate">{document.title}</p>
+          <p className="text-xs text-muted-foreground truncate">{document.original_filename}</p>
+        </div>
+
         <div className="flex items-center justify-between">
-          <span className={cn('text-xs font-medium', getStatusColor(status))}>
+          <span className={cn('text-[11.5px] font-semibold px-2.5 py-1 rounded-full', getStatusBadgeClass(status))}>
             {getStatusLabel(status)}
           </span>
-          <span className="text-xs text-muted-foreground">
+          <span className="text-[11.5px] text-faint-foreground">
             {new Date(document.created_at).toLocaleDateString()}
           </span>
         </div>
-
-        {status === 'processing' || status === 'pending' ? (
-          <div className="w-full h-1 bg-muted rounded-full overflow-hidden">
-            <div className="h-full bg-primary rounded-full animate-pulse w-1/2" />
-          </div>
-        ) : null}
       </CardContent>
     </Card>
   )

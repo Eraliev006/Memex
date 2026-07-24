@@ -1,19 +1,19 @@
 import type { DocumentStatuses } from '~/shared/api/generated/model'
 
-export function getStatusColor(status: DocumentStatuses): string {
+export function getStatusBadgeClass(status: DocumentStatuses): string {
   switch (status) {
-    case 'ready': return 'text-green-500'
-    case 'processing': return 'text-yellow-500'
-    case 'pending': return 'text-blue-500'
-    case 'failed': return 'text-red-500'
+    case 'ready': return 'bg-accent text-accent-foreground'
+    case 'processing': return 'bg-muted text-muted-foreground'
+    case 'pending': return 'bg-muted text-muted-foreground'
+    case 'failed': return 'bg-danger-bg text-danger-foreground'
   }
 }
 
 export function getStatusLabel(status: DocumentStatuses): string {
   switch (status) {
-    case 'ready': return 'Ready'
-    case 'processing': return 'Processing'
-    case 'pending': return 'Pending'
-    case 'failed': return 'Failed'
+    case 'ready': return 'Готов'
+    case 'processing': return 'Индексация'
+    case 'pending': return 'В очереди'
+    case 'failed': return 'Ошибка'
   }
 }

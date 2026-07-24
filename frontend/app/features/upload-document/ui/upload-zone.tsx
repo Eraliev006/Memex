@@ -50,10 +50,10 @@ export function UploadZone() {
     <div className="flex flex-col gap-2">
       <label
         className={cn(
-          'flex flex-col items-center justify-center w-full h-40 border-2 border-dashed rounded-xl cursor-pointer transition-colors',
+          'flex items-center gap-4 w-full border-2 border-dashed rounded-2xl p-6.5 cursor-pointer transition-colors',
           isDragging
             ? 'border-primary bg-primary/5'
-            : 'border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/50',
+            : 'border-border hover:border-primary/50 hover:bg-muted/50',
           isPending && 'opacity-50 pointer-events-none'
         )}
         onDrop={onDrop}
@@ -67,16 +67,14 @@ export function UploadZone() {
           accept=".pdf,.md,.txt,.docx"
           onChange={onFileInput}
         />
-        <div className="flex flex-col items-center gap-2 text-muted-foreground">
-          {isPending ? (
-            <FileUp className="size-8 animate-bounce" />
-          ) : (
-            <Upload className="size-8" />
-          )}
-          <p className="text-sm font-medium">
-            {isPending ? 'Uploading...' : 'Drop files here or click to upload'}
+        <div className="size-10 rounded-[10px] bg-muted flex items-center justify-center shrink-0 text-muted-foreground">
+          {isPending ? <FileUp className="size-4.5 animate-bounce" /> : <Upload className="size-4.5" />}
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <p className="text-sm font-semibold">
+            {isPending ? 'Загрузка...' : 'Перетащите файлы сюда для загрузки'}
           </p>
-          <p className="text-xs">PDF, MD, TXT, DOCX up to 50MB</p>
+          <p className="text-xs text-faint-foreground">PDF, MD, TXT, DOCX · до 50 МБ каждый</p>
         </div>
       </label>
 
