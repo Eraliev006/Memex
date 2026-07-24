@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { Trash2 } from 'lucide-react'
 import { cn } from '~/shared/lib/utils'
 import { Button } from '~/shared/ui/button'
+import { formatRelativeTime } from '~/shared/lib/format-relative-time'
 import type { ChatSessionResponse } from '~/shared/api/generated/model'
 import {
   AlertDialog,
@@ -26,15 +27,17 @@ export const SessionListItem = memo(function SessionListItem({ session, isActive
   return (
     <div
       className={cn(
-        'group flex items-center justify-between gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors hover:bg-accent',
-        isActive && 'bg-accent'
+        'group flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-colors hover:bg-muted',
+        isActive && 'bg-muted'
       )}
       onClick={() => onSelect(session.id)}
     >
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium truncate">{session.title || 'New chat'}</p>
-        <p className="text-xs text-muted-foreground">
-          {session.message_count} messages
+        <p className={cn('text-[13px] truncate', isActive ? 'font-semibold' : 'font-medium')}>
+          {session.title || 'Новый чат'}
+        </p>
+        <p className="text-[11px] text-faint-foreground">
+          {session.last_message_at ? formatRelativeTime(session.last_message_at) : formatRelativeTime(session.created_at)}
         </p>
       </div>
 
@@ -51,14 +54,14 @@ export const SessionListItem = memo(function SessionListItem({ session, isActive
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete chat?</AlertDialogTitle>
+            <AlertDialogTitle>Удалить чат?</AlertDialogTitle>
             <AlertDialogDescription>
-              "{session.title || 'New chat'}" and all its messages will be permanently deleted.
+              «{session.title || 'Новый чат'}» и все его сообщения будут удалены безвозвратно.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
-              Cancel
+              Отмена
             </AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -67,7 +70,7 @@ export const SessionListItem = memo(function SessionListItem({ session, isActive
                 onDelete(session.id)
               }}
             >
-              Delete
+              Удалить
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

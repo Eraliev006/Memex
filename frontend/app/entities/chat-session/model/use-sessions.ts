@@ -7,11 +7,12 @@ const {
   deleteSessionApiV1ChatSessionsSessionIdDelete,
 } = getChat()
 
-export function useSessions() {
+export function useSessions(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ['sessions'],
     queryFn: () => listSessionsApiV1ChatSessionsGet(),
     select: (res) => res.data.items,
+    enabled: options?.enabled,
   })
 }
 
