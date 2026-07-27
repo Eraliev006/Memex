@@ -75,6 +75,8 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str
     GOOGLE_REDIRECT_URI: str
     
+    TAVILY_API_KEY: str
+    
     
     @computed_field  # type: ignore[prop-decorator]
     @property

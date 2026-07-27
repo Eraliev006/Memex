@@ -11,6 +11,7 @@ from .search_service import SearchService
 from .message import MessageService
 from .chat_session_service import ChatSessionService
 from .google_auth import GoogleAuthService
+from .web_search import WebSearchService
 
 __all__ = [
     'AuthService',
@@ -25,5 +26,6 @@ __all__ = [
     'SearchService',
     'MessageService',
     'ChatSessionService',
-    'GoogleAuthService'
+    'GoogleAuthService',
+    'WebSearchService',
 ]

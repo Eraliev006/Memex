@@ -1,5 +1,5 @@
 from typing import AsyncIterator
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import HTTPException
 
@@ -8,6 +8,7 @@ from app.services.message import MessageService
 from app.services.search_service import SearchService
 from app.repositories.chat_session import ChatSessionRepository
 from app.schemas.search_result import SearchResultItem
+from app.schemas.source import DocsSource
 from app.enums.message import MessageStatus
 
 
@@ -78,14 +79,16 @@ class ChatService:
         finally:
             sources = (
                 [
-                    {
-                        "chunk_id": str(c.chunk_id),
-                        "document_id": str(c.document_id),
-                        "text": c.text,
-                        "score": c.score,
-                        "document_title": c.metadata.get("document_title"),
-                        "chunk_index": c.metadata.get("chunk_index"),
-                    }
+                    DocsSource(
+                        id=uuid4(),
+                        title=c.metadata.get("document_title") or "",
+                        snippet=c.text,
+                        score=c.score,
+                        document_name=c.metadata.get("document_title") or "",
+                        doc_id=c.document_id,
+                        chunk_id=c.chunk_id,
+                        page=c.metadata.get("page"),
+                    ).model_dump(mode="json")
                     for c in chunks
                 ]
                 if final_status == MessageStatus.completed

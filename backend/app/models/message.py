@@ -6,6 +6,7 @@ import uuid
 
 from sqlalchemy import UUID, Enum, ForeignKey, func, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.dialects.postgresql import JSONB
 
 from app.models import Base
 from app.enums.message import MessageRole, MessageStatus
@@ -22,8 +23,8 @@ class Message(Base):
     content: Mapped[str]
     created_at: Mapped[datetime.datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime.datetime | None] = mapped_column(server_default=func.now(), onupdate=func.now())
-    sources: Mapped[list[dict] | None] = mapped_column(JSON)
-    tool_calls: Mapped[list[dict] | None] = mapped_column(JSON)
+    sources: Mapped[list[dict] | None] = mapped_column(JSONB)
+    tool_calls: Mapped[list[dict] | None] = mapped_column(JSONB)
     prompt_tokens: Mapped[int | None]
     completion_tokens: Mapped[int | None]
     meta: Mapped[dict | None] = mapped_column(JSON) 

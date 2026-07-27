@@ -23,6 +23,8 @@ from ratelimiter.algorithms.token_bucket import TokenBucket
 from ratelimiter.storage.redis_storage import RedisStorage
 
 from app.core import redis_client
+from app.services import WebSearchService
+from app.providers import TavilySearchClient
 
 
 @dataclass
@@ -161,3 +163,15 @@ async def get_chat_session_service(db: SessionDep) -> ChatSessionService:
     return ChatSessionService(db)
 
 ChatSessionServiceDep = Annotated[ChatSessionService, Depends(get_chat_session_service)]
+
+
+# WEB SEARCH SERVICE DI
+async def get_web_search_service(redis: RedisClientDep) -> WebSearchService:
+    if redis.client is None:
+        raise RuntimeError("Redis client is not initialized")
+    return WebSearchService(
+        redis=redis.client,
+        client=TavilySearchClient(api_key=settings.TAVILY_API_KEY)
+    )
+
+WebSearchServiceDep = Annotated[WebSearchService, Depends(get_web_search_service)]

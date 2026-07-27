@@ -22,7 +22,11 @@ class MessageService:
         if chat.user_id != user_id:
             raise HTTPException(status_code=403, detail="Access denied")
 
-        message_in = Message(**message.model_dump(), chat_session_id=chat_session_id)
+        message_in = Message(
+            role=message.role,
+            content=message.content,
+            chat_session_id=chat_session_id,
+        )
         resp = await self._repo.create(message_in)
         await self._chat_repo.touch(chat_session_id)
         await self._db.commit()

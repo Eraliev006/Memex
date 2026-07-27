@@ -7,6 +7,7 @@ from .chat_cursor import ChatCursor
 from .message import MessageCreate, MessageResponse, MessageUpdate, MessageHistoryResponse, MessageStreamChunk
 from .message_cursor import MessageCursor
 from .search_result import SearchResult, SearchResultItem
+from .source import WebSource, DocsSource
 
 __all__ = [
     'RegisterRequest',
@@ -36,4 +37,6 @@ __all__ = [
     'SearchResultItem',
     'LoginWithGoogle',
     'UserCreateWithGoogle',
+    'WebSource',
+    'DocsSource',
 ]
