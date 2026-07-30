@@ -1,3 +1,4 @@
+from typing import Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Query, Request
@@ -14,6 +15,7 @@ router = APIRouter(tags=["chat"], prefix="/chat")
 
 class ChatRequest(BaseModel):
     message: str
+    search_scope: Literal['docs', 'web', 'both'] = 'docs'
     doc_ids: list[UUID] | None = None
 
 
@@ -91,17 +93,21 @@ async def chat(
     current_user: CurrentUserDep,
 ):
     async def stream():
-        async for token in chat_service.chat(
-            user_id=current_user.id,
-            session_id=session_id,
-            user_message=body.message,
-            doc_ids=body.doc_ids,
-        ):
-            if await request.is_disconnected():
-                break
-            yield f"data: {token}\n\n"
-        yield "data: [DONE]\n\n"
-
+        try:
+            async for token in chat_service.chat(
+                user_id=current_user.id,
+                session_id=session_id,
+                user_message=body.message,
+                doc_ids=body.doc_ids,
+                search_scope=body.search_scope,
+            ):
+                if await request.is_disconnected():
+                    break
+                yield f"data: {token}\n\n"
+        except RuntimeError:
+            yield "data: [ERROR]\n\n"
+        finally:
+            yield "data: [DONE]\n\n"
     return StreamingResponse(
         stream(),
         media_type="text/event-stream",

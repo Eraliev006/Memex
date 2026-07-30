@@ -8,6 +8,7 @@ from .message import MessageCreate, MessageResponse, MessageUpdate, MessageHisto
 from .message_cursor import MessageCursor
 from .search_result import SearchResult, SearchResultItem
 from .source import WebSource, DocsSource
+from .tool_call import ToolCall, LLMResponse, StreamEvent
 
 __all__ = [
     'RegisterRequest',
@@ -39,4 +40,7 @@ __all__ = [
     'UserCreateWithGoogle',
     'WebSource',
     'DocsSource',
+    'ToolCall',
+    'LLMResponse',
+    'StreamEvent',
 ]

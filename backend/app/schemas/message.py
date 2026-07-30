@@ -14,7 +14,6 @@ from app.schemas.source import Source
 class MessageCreate(BaseModel):
     role: MessageRole
     content: str
-    search_scope: Literal['docs', 'web', 'both'] = 'docs'
 
 class MessageUpdate(BaseModel):
     status: MessageStatus | None = None

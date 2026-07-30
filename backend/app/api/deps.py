@@ -135,9 +135,22 @@ SearchServiceDep = Annotated[SearchService, Depends(get_search_service)]
 # CHAT SERVICE DI
 _llm_service = LLMService(provider=get_llm_provider())
 
+# WEB SEARCH SERVICE DI
+async def get_web_search_service(redis: RedisClientDep) -> WebSearchService:
+    if redis.client is None:
+        raise RuntimeError("Redis client is not initialized")
+    return WebSearchService(
+        redis=redis.client,
+        client=TavilySearchClient(api_key=settings.TAVILY_API_KEY)
+    )
+
+WebSearchServiceDep = Annotated[WebSearchService, Depends(get_web_search_service)]
+
+
 async def get_chat_service(
     db: SessionDep,
     search_service: SearchServiceDep,
+    web_search_service: WebSearchServiceDep
 ) -> ChatService:
     message_service = MessageService(db)
     chat_session_repo = ChatSessionRepository(db)
@@ -146,6 +159,7 @@ async def get_chat_service(
         search_service=search_service,
         llm_service=_llm_service,
         chat_session_repo=chat_session_repo,
+        web_search_service=web_search_service
     )
 
 ChatServiceDep = Annotated[ChatService, Depends(get_chat_service)]
@@ -163,15 +177,3 @@ async def get_chat_session_service(db: SessionDep) -> ChatSessionService:
     return ChatSessionService(db)
 
 ChatSessionServiceDep = Annotated[ChatSessionService, Depends(get_chat_session_service)]
-
-
-# WEB SEARCH SERVICE DI
-async def get_web_search_service(redis: RedisClientDep) -> WebSearchService:
-    if redis.client is None:
-        raise RuntimeError("Redis client is not initialized")
-    return WebSearchService(
-        redis=redis.client,
-        client=TavilySearchClient(api_key=settings.TAVILY_API_KEY)
-    )
-
-WebSearchServiceDep = Annotated[WebSearchService, Depends(get_web_search_service)]
