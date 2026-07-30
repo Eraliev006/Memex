@@ -48,9 +48,9 @@ class GroqLLM:
             max_completion_tokens=self.max_tokens,
             tools=tools, # type: ignore
             tool_choice='auto',
-            temperature=0.5
+            temperature=0,
         )
-        
+
         message = response.choices[0].message
         tool_calls = None
         
@@ -75,9 +75,9 @@ class GroqLLM:
             max_completion_tokens=self.max_tokens,
             stream=True,
             stop=None,
-            temperature=0.5,
+            temperature=0,
             top_p=1
-        ) 
+        )
         
         collected: dict[int, dict] = {}
         async for chunk in response:

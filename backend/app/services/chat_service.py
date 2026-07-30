@@ -105,6 +105,7 @@ class ChatService:
         llm_messages = self._build_messages(
             history=history,
             user_message=user_message,
+            search_scope=search_scope,
         )
 
         assistant_msg = await self._messages.create_assistant_message(
@@ -168,8 +169,24 @@ class ChatService:
             for c in chunks
         )
 
-    def _build_messages(self, history, user_message: str) -> list[dict]:
-        system_content = "You are a helpful assistant with access to search tools."
+    def _build_messages(self, history, user_message: str, search_scope: str) -> list[dict]:
+        tool_hints = {
+            "docs": "You have access to a `qdrant_search` tool that searches the user's uploaded documents.",
+            "web": "You have access to a `web_search` tool that searches the web for current information.",
+            "both": (
+                "You have access to two tools: `qdrant_search` (searches the user's uploaded documents) "
+                "and `web_search` (searches the web for current information)."
+            ),
+        }
+        system_content = (
+            "You are a helpful assistant. "
+            f"{tool_hints[search_scope]} "
+            "If answering requires information you don't already know with certainty — current events, "
+            "specific facts, or anything that could be in the user's documents — you MUST call the "
+            "appropriate tool before answering, instead of guessing. "
+            "Never claim you searched or looked something up unless you actually called a tool in this turn. "
+            "If a tool call returns nothing relevant, say so honestly instead of making up an answer."
+        )
         messages: list[dict] = [{"role": "system", "content": system_content}]
 
         for msg in history:
