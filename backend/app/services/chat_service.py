@@ -81,6 +81,7 @@ class ChatService:
                 [
                     DocsSource(
                         id=uuid4(),
+                        source='docs',
                         title=c.metadata.get("document_title") or "",
                         snippet=c.text,
                         score=c.score,
