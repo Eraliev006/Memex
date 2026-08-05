@@ -4,8 +4,10 @@
  * Memex
  * OpenAPI spec version: 0.1.0
  */
+import type { ChatRequestSearchScope } from './chatRequestSearchScope';
 
 export interface ChatRequest {
   message: string;
+  search_scope?: ChatRequestSearchScope;
   doc_ids?: string[] | null;
 }

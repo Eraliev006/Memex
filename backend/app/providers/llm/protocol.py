@@ -14,5 +14,5 @@ class LLMProtocol(Protocol):
     async def complete_with_tools(self, messages: list[dict], tools: list[dict]) -> LLMResponse:
         ...
         
-    def stream_with_tools(self, messages: list[dict], tools: list[dict]) -> AsyncIterator[StreamEvent]:
+    def stream_with_tools(self, messages: list[dict], tools: list[dict], tool_choice: dict | str = "auto") -> AsyncIterator[StreamEvent]:
         ...

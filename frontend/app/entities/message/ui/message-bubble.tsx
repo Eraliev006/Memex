@@ -1,10 +1,11 @@
 import { memo, useState } from 'react'
 import { cn } from '~/shared/lib/utils'
-import type { MessageResponse } from '~/shared/api/generated/model'
+import type { MessageResponse, DocsSource, WebSource } from '~/shared/api/generated/model'
+import { MessageStatus } from '~/shared/api/generated/model/messageStatus'
 import ReactMarkdown from 'react-markdown'
 import rehypeRaw from 'rehype-raw'
 import rehypeSanitize from 'rehype-sanitize'
-import { FileText } from 'lucide-react'
+import { FileText, Globe, TriangleAlert } from 'lucide-react'
 import {
   Sheet,
   SheetContent,
@@ -22,12 +23,7 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
-interface Source {
-  document_title?: string
-  text: string
-  score?: number
-  chunk_index?: number
-}
+type Source = DocsSource | WebSource
 
 interface MessageBubbleProps {
   message: MessageResponse
@@ -38,6 +34,7 @@ export const MessageBubble = memo(function MessageBubble({ message }: MessageBub
   const [selectedSource, setSelectedSource] = useState<Source | null>(null)
   const sources = message.sources as Source[] | null
   const isMobile = useIsMobile()
+  const isFailed = !isUser && message.status === MessageStatus.failed
 
   if (message.role === 'tool' || message.role === 'system') return null
 
@@ -63,12 +60,23 @@ export const MessageBubble = memo(function MessageBubble({ message }: MessageBub
         >
           {isUser ? (
             <p className="whitespace-pre-wrap break-words">{message.content}</p>
+          ) : isFailed && !message.content ? (
+            <p className="flex items-center gap-1.5 text-destructive">
+              <TriangleAlert className="size-3.5 shrink-0" />
+              Не удалось получить ответ. Попробуйте ещё раз.
+            </p>
           ) : (
             <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2">
               {/* без rehypeRaw: это ответ модели, а не наш документ — рендерить
                   в нём сырой HTML небезопасно (модель могла нахвататься его из
                   чужих загруженных документов через RAG-контекст) */}
               <ReactMarkdown>{message.content}</ReactMarkdown>
+              {isFailed && (
+                <p className="flex items-center gap-1.5 text-xs text-destructive mt-1">
+                  <TriangleAlert className="size-3 shrink-0" />
+                  Ответ прерван из-за ошибки
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -81,9 +89,9 @@ export const MessageBubble = memo(function MessageBubble({ message }: MessageBub
                 onClick={() => setSelectedSource(source)}
                 className="flex items-center gap-1.5 text-[11.5px] px-2.5 py-1 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors whitespace-nowrap"
               >
-                <FileText className="size-3" />
-                {source.document_title || 'Документ'}
-                {source.chunk_index != null && ` · чанк ${source.chunk_index}`}
+                {source.source === 'web' ? <Globe className="size-3" /> : <FileText className="size-3" />}
+                {source.title || 'Документ'}
+                {source.source === 'docs' && source.page != null && ` · стр. ${source.page}`}
               </button>
             ))}
           </div>
@@ -103,9 +111,19 @@ export const MessageBubble = memo(function MessageBubble({ message }: MessageBub
         >
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
-              <FileText className="size-4" />
-              {selectedSource?.document_title || 'Документ'}
+              {selectedSource?.source === 'web' ? <Globe className="size-4" /> : <FileText className="size-4" />}
+              {selectedSource?.title || 'Документ'}
             </SheetTitle>
+            {selectedSource?.source === 'web' && (
+              <a
+                href={selectedSource.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-muted-foreground underline hover:no-underline break-all"
+              >
+                {selectedSource.url}
+              </a>
+            )}
             {selectedSource?.score != null && (
               <p className="text-xs text-muted-foreground">
                 {Math.round(selectedSource.score * 100)}% совпадение
@@ -121,7 +139,7 @@ export const MessageBubble = memo(function MessageBubble({ message }: MessageBub
             )}
           >
             <ReactMarkdown rehypePlugins={sourcePlugins}>
-              {selectedSource?.text ?? ''}
+              {selectedSource?.snippet ?? ''}
             </ReactMarkdown>
           </div>
         </SheetContent>

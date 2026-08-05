@@ -3,6 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Query, Request
 from fastapi.responses import StreamingResponse
+from loguru import logger
 from pydantic import BaseModel
 
 from app.api.deps import ChatServiceDep, ChatSessionServiceDep, CurrentUserDep, MessageServiceDep
@@ -81,7 +82,7 @@ async def get_messages(
             id=cursor_id,
             created_at=datetime.fromisoformat(cursor_created_at),
         )
-    return await message_service.get_history(session_id, cursor, limit)
+    return await message_service.get_history(session_id, current_user.id, cursor, limit)
 
 
 @router.post("/{session_id}/message")
@@ -104,7 +105,11 @@ async def chat(
                 if await request.is_disconnected():
                     break
                 yield f"data: {token}\n\n"
-        except RuntimeError:
+        except Exception:
+            logger.exception(
+                "Chat stream failed for session {session_id}",
+                session_id=session_id,
+            )
             yield "data: [ERROR]\n\n"
         finally:
             yield "data: [DONE]\n\n"

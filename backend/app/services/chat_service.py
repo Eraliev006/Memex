@@ -1,6 +1,5 @@
 from typing import AsyncIterator, Callable
 from uuid import UUID, uuid4
-import uuid
 
 from fastapi import HTTPException
 
@@ -9,7 +8,6 @@ from app.services.message import MessageService
 from app.services.web_search import WebSearchService
 from app.services.search_service import SearchService
 from app.repositories.chat_session import ChatSessionRepository
-from app.schemas.search_result import SearchResultItem
 from app.schemas.source import DocsSource
 from app.enums.message import MessageStatus
 from app.services.react_agent import ReactAgent
@@ -67,6 +65,13 @@ class ChatService:
             return [WEB_SEARCH_TOOL]
         return [QDRANT_SEARCH_TOOL, WEB_SEARCH_TOOL]  # both
     
+    def _resolve_tool_choice(self, search_scope: str) -> dict | str:
+        if search_scope == "docs":
+            return {"type": "function", "function": {"name": "qdrant_search"}}
+        if search_scope == "web":
+            return {"type": "function", "function": {"name": "web_search"}}
+        return "auto"  # both — let the model pick which tool(s) to call
+
     def _resolve_executors(self, search_scope: str, web_executor: Callable, qdrant_executor: Callable) -> dict:
         all_executors = {"web_search": web_executor, "qdrant_search": qdrant_executor}
         if search_scope == "docs":
@@ -141,14 +146,15 @@ class ChatService:
             
         executors = self._resolve_executors(search_scope, web_search_executor, qdrant_search_executor)
         tools = self._resolve_tools(search_scope)
-        
+        tool_choice = self._resolve_tool_choice(search_scope)
+
         agent = ReactAgent(llm=self._llm, executors=executors)
 
         full_response = ""
         final_status = MessageStatus.failed
 
         try:
-            async for token in agent.run(messages=llm_messages, tools=tools):
+            async for token in agent.run(messages=llm_messages, tools=tools, tool_choice=tool_choice):
                 full_response += token
                 yield token
             final_status = MessageStatus.completed
@@ -160,14 +166,6 @@ class ChatService:
                 status=final_status,
                 sources=sources,
             )
-
-    def _build_context(self, chunks: list[SearchResultItem]) -> str:
-        if not chunks:
-            return ""
-        return "\n\n".join(
-            f"[{c.metadata.get('document_title', 'document')}]\n{c.text}"
-            for c in chunks
-        )
 
     def _build_messages(self, history, user_message: str, search_scope: str) -> list[dict]:
         tool_hints = {
@@ -185,7 +183,11 @@ class ChatService:
             "specific facts, or anything that could be in the user's documents — you MUST call the "
             "appropriate tool before answering, instead of guessing. "
             "Never claim you searched or looked something up unless you actually called a tool in this turn. "
-            "If a tool call returns nothing relevant, say so honestly instead of making up an answer."
+            "If a tool call returns nothing relevant to answering the user's actual question, say so honestly "
+            "instead of making up an answer. "
+            "If the user's message is casual conversation (a greeting, thanks, small talk) and the tool results "
+            "don't relate to it, ignore those results entirely and just respond naturally — don't mention the "
+            "search or force an unrelated connection to it."
         )
         messages: list[dict] = [{"role": "system", "content": system_content}]
 

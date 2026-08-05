@@ -2,7 +2,7 @@
 import json
 from typing import AsyncIterator
 
-from groq import AsyncGroq
+from groq import AsyncGroq, APIError
 
 from app.core import settings
 from app.schemas import ToolCall, LLMResponse, StreamEvent
@@ -66,41 +66,55 @@ class GroqLLM:
         
         return LLMResponse(content=message.content, tool_calls=tool_calls)
 
-    async def stream_with_tools(self, messages: list[dict], tools: list[dict]) -> AsyncIterator[StreamEvent]:
-        response = await self.client.chat.completions.create(
-            messages=messages, # type: ignore
-            tools=tools, # type: ignore
-            tool_choice='auto',
-            model=self.model,
-            max_completion_tokens=self.max_tokens,
-            stream=True,
-            stop=None,
-            temperature=0,
-            top_p=1
-        )
-        
-        collected: dict[int, dict] = {}
-        async for chunk in response:
-            delta = chunk.choices[0].delta
-            
-            if delta.content:
-                yield StreamEvent(content=delta.content)
-                
-            if delta.tool_calls:
-                for tc_delta in delta.tool_calls:
-                    index = tc_delta.index
-                    if index not in collected:
-                        collected[index] = {'id': tc_delta.id, 'name': tc_delta.function.name, "arguments": ""}
-                    
-                    if tc_delta.function.arguments:
-                        collected[index]["arguments"] += tc_delta.function.arguments
-        if collected:
-            tool_calls = [
-                ToolCall(
-                    id=data['id'],
-                    tool_name=data['name'],
-                    arguments=json.loads(data['arguments'])
-                )
-                for data in collected.values()
-            ]
-            yield StreamEvent(tool_calls=tool_calls)
+    async def stream_with_tools(self, messages: list[dict], tools: list[dict], tool_choice: dict | str = "auto", max_retries: int = 2) -> AsyncIterator[StreamEvent]:
+        attempt = 0
+        while True:
+            response = await self.client.chat.completions.create(
+                messages=messages, # type: ignore
+                tools=tools, # type: ignore
+                tool_choice=tool_choice, # type: ignore
+                model=self.model,
+                max_completion_tokens=self.max_tokens,
+                stream=True,
+                stop=None,
+                temperature=0,
+                top_p=1
+            )
+
+            collected: dict[int, dict] = {}
+            yielded_content = False
+            try:
+                async for chunk in response:
+                    delta = chunk.choices[0].delta
+
+                    if delta.content:
+                        yielded_content = True
+                        yield StreamEvent(content=delta.content)
+
+                    if delta.tool_calls:
+                        for tc_delta in delta.tool_calls:
+                            index = tc_delta.index
+                            if index not in collected:
+                                collected[index] = {'id': tc_delta.id, 'name': tc_delta.function.name, "arguments": ""}
+
+                            if tc_delta.function.arguments:
+                                collected[index]["arguments"] += tc_delta.function.arguments
+            except APIError as e:
+                body = getattr(e, 'body', None) or {}
+                is_malformed_tool_call = body.get('error', {}).get('code') == 'tool_use_failed'
+                if is_malformed_tool_call and not yielded_content and attempt < max_retries:
+                    attempt += 1
+                    continue
+                raise
+
+            if collected:
+                tool_calls = [
+                    ToolCall(
+                        id=data['id'],
+                        tool_name=data['name'],
+                        arguments=json.loads(data['arguments'])
+                    )
+                    for data in collected.values()
+                ]
+                yield StreamEvent(tool_calls=tool_calls)
+            return

@@ -32,7 +32,13 @@ class MessageService:
         await self._db.commit()
         return MessageResponse.model_validate(resp)
 
-    async def get_history(self, chat_session_id: uuid.UUID, cursor: MessageCursor | None, limit: int = 10) -> MessageHistoryResponse:
+    async def get_history(self, chat_session_id: uuid.UUID, user_id: uuid.UUID, cursor: MessageCursor | None, limit: int = 10) -> MessageHistoryResponse:
+        chat = await self._chat_repo.get_by_id(chat_session_id)
+        if not chat:
+            raise HTTPException(status_code=404, detail=f"Chat {chat_session_id} not found")
+        if chat.user_id != user_id:
+            raise HTTPException(status_code=403, detail="Access denied")
+
         messages = await self._repo.list_by_chat_id(
             chat_id=chat_session_id,
             cursor=cursor,

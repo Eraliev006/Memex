@@ -9,11 +9,19 @@ import { useSSEStream } from '~/shared/lib/streaming/use-sse-stream'
 import { ErrorState } from '~/shared/ui/error-state'
 import { cn } from '~/shared/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
+import { ChatRequestSearchScope } from '~/shared/api/generated/model/chatRequestSearchScope'
+
+const SEARCH_SCOPE_OPTIONS: { value: ChatRequestSearchScope; label: string }[] = [
+  { value: ChatRequestSearchScope.docs, label: 'Документы' },
+  { value: ChatRequestSearchScope.web, label: 'Веб' },
+  { value: ChatRequestSearchScope.both, label: 'Оба' },
+]
 
 export function ChatPage() {
   const { sessionId } = useParams<{ sessionId?: string }>()
   const activeSessionId = sessionId ?? null
   const [input, setInput] = useState('')
+  const [searchScope, setSearchScope] = useState<ChatRequestSearchScope>(ChatRequestSearchScope.docs)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const { data: sessions } = useSessions()
@@ -38,6 +46,7 @@ export function ChatPage() {
 
     const ok = await start(`/api/v1/chat/${activeSessionId}/message`, {
       message,
+      search_scope: searchScope,
     })
 
     if (ok) {
@@ -144,6 +153,24 @@ export function ChatPage() {
       </div>
 
       <div className="p-4 sm:px-6 sm:pb-6 sm:pt-4.5 max-w-[760px] w-full mx-auto">
+        <div className="flex gap-1 mb-2">
+          {SEARCH_SCOPE_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => setSearchScope(option.value)}
+              disabled={isStreaming}
+              className={cn(
+                'rounded-full px-3 py-1 text-xs font-medium transition-colors disabled:pointer-events-none disabled:opacity-50',
+                searchScope === option.value
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted text-muted-foreground hover:text-foreground'
+              )}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
         <div className="flex gap-2.5 items-end border rounded-2xl pl-4 pr-2 py-2">
           <textarea
             className={cn(

@@ -29,10 +29,15 @@ class ReactAgent:
             }
         return await asyncio.gather(*(run_one(tc) for tc in tool_calls))
 
-    async def run(self, messages: list[dict], tools: list[dict]) -> AsyncIterator[str]:
-        for _ in range(self._max_iterations):
+    async def run(self, messages: list[dict], tools: list[dict], tool_choice: dict | str = "auto") -> AsyncIterator[str]:
+        for i in range(self._max_iterations):
+            # форсированный tool_choice (конкретная функция) применяется только на первом
+            # раунде — чтобы гарантировать хотя бы один поиск. На последующих раундах
+            # tool_choice всегда 'auto', иначе модель будет обязана вызывать тот же тул
+            # бесконечно и никогда не сможет дать финальный текстовый ответ.
+            current_tool_choice = tool_choice if i == 0 else "auto"
             tool_calls = None
-            async for event in self._llm.stream_with_tools(messages=messages, tools=tools):
+            async for event in self._llm.stream_with_tools(messages=messages, tools=tools, tool_choice=current_tool_choice):
                 if event.content:
                     yield event.content
                 if event.tool_calls:

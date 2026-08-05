@@ -19,7 +19,7 @@ class ChatSessionService:
         await self.db.commit()
         return ChatSessionResponse.model_validate(result)
 
-    async def _get_owned_session(self, chat_session_id: uuid.UUID, user_id: uuid.UUID) -> ChatSession:
+    async def get_owned_session(self, chat_session_id: uuid.UUID, user_id: uuid.UUID) -> ChatSession:
         chat_session = await self._repo.get_by_id(chat_session_id)
         if not chat_session:
             raise HTTPException(status_code=404, detail='Chat session not found')
@@ -28,7 +28,7 @@ class ChatSessionService:
         return chat_session
 
     async def update_chat_session(self, chat_session_id: uuid.UUID, user_id: uuid.UUID, new_data: ChatSessionUpdate) -> ChatSessionResponse:
-        await self._get_owned_session(chat_session_id, user_id)
+        await self.get_owned_session(chat_session_id, user_id)
 
         new = await self._repo.update(
             chat_session_id=chat_session_id,
@@ -38,7 +38,7 @@ class ChatSessionService:
         return ChatSessionResponse.model_validate(new)
 
     async def delete_chat_session(self, chat_session_id: uuid.UUID, user_id: uuid.UUID) -> None:
-        await self._get_owned_session(chat_session_id, user_id)
+        await self.get_owned_session(chat_session_id, user_id)
 
         await self._repo.delete(chat_session_id)
         await self.db.commit()

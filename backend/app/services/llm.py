@@ -19,6 +19,6 @@ class LLMService:
     async def complete_with_tools(self, messages: list[dict], tools: list[dict]) -> LLMResponse:
         return await self._provider.complete_with_tools(messages=messages, tools=tools)
     
-    async def stream_with_tools(self, messages: list[dict], tools: list[dict]) -> AsyncIterator[StreamEvent]:
-        async for event in self._provider.stream_with_tools(messages, tools=tools):
+    async def stream_with_tools(self, messages: list[dict], tools: list[dict], tool_choice: dict | str = "auto") -> AsyncIterator[StreamEvent]:
+        async for event in self._provider.stream_with_tools(messages, tools=tools, tool_choice=tool_choice):
             yield event

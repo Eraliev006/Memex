@@ -4,10 +4,11 @@
  * Memex
  * OpenAPI spec version: 0.1.0
  */
-import type { MessageResponseSources } from './messageResponseSources';
+import type { DocsSource } from './docsSource';
 import type { MessageResponseToolCalls } from './messageResponseToolCalls';
 import type { MessageRole } from './messageRole';
 import type { MessageStatus } from './messageStatus';
+import type { WebSource } from './webSource';
 
 export interface MessageResponse {
   id: string;
@@ -15,7 +16,7 @@ export interface MessageResponse {
   role: MessageRole;
   content: string;
   status: MessageStatus;
-  sources: MessageResponseSources;
+  sources: (DocsSource | WebSource)[] | null;
   tool_calls: MessageResponseToolCalls;
   created_at: string;
   updated_at: string | null;

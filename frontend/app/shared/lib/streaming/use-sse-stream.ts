@@ -53,6 +53,11 @@ export function useSSEStream(options: UseSSEStreamOptions = DEFAULT_OPTIONS) {
             // начинаться/заканчиваться пробелом, который нельзя терять при склейке
             const data = line.slice(6).replace(/\r$/, '')
             if (data === '[DONE]') continue
+            if (data === '[ERROR]') {
+              setStatus('error')
+              options.onError?.(new Error('Stream failed'))
+              continue
+            }
             if (data !== '') {
               setChunks((prev) => [...prev, data])
               options.onChunk?.(data)
