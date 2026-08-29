@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState, type ReactNode } from 'react'
 import { Upload, FileUp, X } from 'lucide-react'
 import { cn } from '~/shared/lib/utils'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -6,8 +6,7 @@ import { getDocument } from '~/shared/api/generated/document/document'
 
 const { uploadDocumentsApiV1DocumentUploadPost } = getDocument()
 
-export function UploadZone() {
-  const [isDragging, setIsDragging] = useState(false)
+export function useDocumentUpload() {
   const [failedFiles, setFailedFiles] = useState<string[]>([])
   const queryClient = useQueryClient()
 
@@ -28,23 +27,80 @@ export function UploadZone() {
     Array.from(files).forEach((file) => upload(file))
   }, [upload])
 
-  const onDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-    handleFiles(e.dataTransfer.files)
-  }, [handleFiles])
+  const dismissFailed = (index: number) =>
+    setFailedFiles((prev) => prev.filter((_, i) => i !== index))
 
-  const onDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }
+  return { handleFiles, isPending, failedFiles, dismissFailed }
+}
 
-  const onDragLeave = () => setIsDragging(false)
+interface UploadButtonProps {
+  onFiles: (files: FileList | null) => void
+  isPending: boolean
+}
 
-  const onFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleFiles(e.target.files)
-    e.target.value = ''
-  }
+export function UploadButton({ onFiles, isPending }: UploadButtonProps) {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  return (
+    <>
+      <input
+        ref={inputRef}
+        type="file"
+        className="hidden"
+        multiple
+        accept=".pdf,.md,.txt,.docx"
+        onChange={(e) => {
+          onFiles(e.target.files)
+          e.target.value = ''
+        }}
+      />
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={isPending}
+        className="h-8 shrink-0 rounded-full bg-invert-bg px-3.5 text-[12.5px] font-medium text-invert-foreground hover:opacity-85 disabled:opacity-50 transition-opacity"
+      >
+        {isPending ? 'Загрузка…' : 'Загрузить'}
+      </button>
+    </>
+  )
+}
+
+interface DropZoneProps {
+  onFiles: (files: FileList | null) => void
+  className?: string
+  children: ReactNode
+}
+
+// Drag-and-drop работает по всей области списка документов, а не в отдельной
+// dashed-зоне — визуальный маркер здесь минимальный (лёгкая заливка фона).
+export function DropZone({ onFiles, className, children }: DropZoneProps) {
+  const [isDragging, setIsDragging] = useState(false)
+
+  return (
+    <div
+      className={cn('transition-colors', isDragging && 'bg-muted/60', className)}
+      onDrop={(e) => {
+        e.preventDefault()
+        setIsDragging(false)
+        onFiles(e.dataTransfer.files)
+      }}
+      onDragOver={(e) => {
+        e.preventDefault()
+        setIsDragging(true)
+      }}
+      onDragLeave={() => setIsDragging(false)}
+    >
+      {children}
+    </div>
+  )
+}
+
+// Дашборд-версия с dashed-рамкой — используется на онбординге (вне скоупа этого
+// редизайна, там композиция другая: одна общая зона, не список + отдельная кнопка).
+export function UploadZone() {
+  const { handleFiles, isPending, failedFiles, dismissFailed } = useDocumentUpload()
+  const [isDragging, setIsDragging] = useState(false)
 
   return (
     <div className="flex flex-col gap-2">
@@ -52,20 +108,30 @@ export function UploadZone() {
         className={cn(
           'flex items-center gap-4 w-full border-2 border-dashed rounded-2xl p-6.5 cursor-pointer transition-colors',
           isDragging
-            ? 'border-primary bg-primary/5'
-            : 'border-border hover:border-primary/50 hover:bg-muted/50',
+            ? 'border-foreground/40 bg-accent'
+            : 'border-border hover:border-foreground/25 hover:bg-muted/50',
           isPending && 'opacity-50 pointer-events-none'
         )}
-        onDrop={onDrop}
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
+        onDrop={(e) => {
+          e.preventDefault()
+          setIsDragging(false)
+          handleFiles(e.dataTransfer.files)
+        }}
+        onDragOver={(e) => {
+          e.preventDefault()
+          setIsDragging(true)
+        }}
+        onDragLeave={() => setIsDragging(false)}
       >
         <input
           type="file"
           className="hidden"
           multiple
           accept=".pdf,.md,.txt,.docx"
-          onChange={onFileInput}
+          onChange={(e) => {
+            handleFiles(e.target.files)
+            e.target.value = ''
+          }}
         />
         <div className="size-10 rounded-[10px] bg-muted flex items-center justify-center shrink-0 text-muted-foreground">
           {isPending ? <FileUp className="size-4.5 animate-bounce" /> : <Upload className="size-4.5" />}
@@ -78,22 +144,23 @@ export function UploadZone() {
         </div>
       </label>
 
-      {failedFiles.length > 0 && (
-        <div className="flex flex-col gap-1 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
-          {failedFiles.map((name, i) => (
-            <div key={`${name}-${i}`} className="flex items-center justify-between gap-2">
-              <span className="truncate">Failed to upload "{name}"</span>
-              <button
-                type="button"
-                className="shrink-0"
-                onClick={() => setFailedFiles((prev) => prev.filter((_, idx) => idx !== i))}
-              >
-                <X className="size-3.5" />
-              </button>
-            </div>
-          ))}
+      <UploadFailures failedFiles={failedFiles} onDismiss={dismissFailed} />
+    </div>
+  )
+}
+
+export function UploadFailures({ failedFiles, onDismiss }: { failedFiles: string[]; onDismiss: (index: number) => void }) {
+  if (failedFiles.length === 0) return null
+  return (
+    <div className="flex flex-col gap-1 rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">
+      {failedFiles.map((name, i) => (
+        <div key={`${name}-${i}`} className="flex items-center justify-between gap-2">
+          <span className="truncate">Не удалось загрузить «{name}»</span>
+          <button type="button" className="shrink-0" onClick={() => onDismiss(i)}>
+            <X className="size-3.5" />
+          </button>
         </div>
-      )}
+      ))}
     </div>
   )
 }

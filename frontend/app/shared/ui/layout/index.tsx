@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate, useParams } from 'react-router'
-import { FileText, MessageSquare, Settings, Network, Brain, LogOut, Sun, Moon, Monitor, PlusCircle } from 'lucide-react'
+import { FileText, MessageSquare, Settings, Network, Plus } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -9,49 +9,44 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarProvider,
-  SidebarTrigger,
 } from '~/shared/ui/sidebar'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-} from '~/shared/ui/dropdown-menu'
-import { Avatar, AvatarFallback } from '~/shared/ui/avatar'
-import { Button } from '~/shared/ui/button'
 import { ErrorState } from '~/shared/ui/error-state'
-import { useState } from 'react'
-import { useAuth } from '~/shared/lib/auth-context'
+import { ThemeToggle } from '~/shared/ui/theme-toggle'
 import { useMe } from '~/shared/lib/use-me'
-import { useTheme } from '~/shared/lib/use-theme'
-import { API_BASE_URL } from '~/shared/api/config/env'
-import axios from 'axios'
 import { useSessions, useCreateSession, useDeleteSession } from '~/entities/chat-session/model/use-sessions'
 import { SessionListItem } from '~/entities/chat-session/ui/session-list-item'
-
+import type { ChatSessionResponse } from '~/shared/api/generated/model'
 
 const nav = [
+  { to: '/chat', icon: MessageSquare, label: 'Чаты' },
   { to: '/documents', icon: FileText, label: 'Документы' },
-  { to: '/chat', icon: MessageSquare, label: 'Чат' },
-  { to: '/knowledge-graph', icon: Network, label: 'Knowledge Graph' },
+  { to: '/knowledge-graph', icon: Network, label: 'Граф' },
   { to: '/settings', icon: Settings, label: 'Настройки' },
 ]
+
+function groupSessions(sessions: ChatSessionResponse[]) {
+  const now = Date.now()
+  const groups: { label: string; items: ChatSessionResponse[] }[] = [
+    { label: 'Сегодня', items: [] },
+    { label: 'На этой неделе', items: [] },
+    { label: 'Раньше', items: [] },
+  ]
+  for (const s of sessions) {
+    const ts = new Date(s.last_message_at || s.created_at).getTime()
+    const days = (now - ts) / 86_400_000
+    const bucket = days < 1 ? 0 : days < 7 ? 1 : 2
+    groups[bucket].items.push(s)
+  }
+  return groups.filter((g) => g.items.length > 0)
+}
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { theme, setTheme } = useTheme()
-  const { setAccessToken } = useAuth()
-  const [open, setOpen] = useState(true)
   const { data: me } = useMe()
 
-  const isChatSection = location.pathname.startsWith('/chat')
   const { sessionId } = useParams<{ sessionId?: string }>()
-  const { data: sessions, isError: isSessionsError, refetch: refetchSessions } = useSessions({ enabled: isChatSection })
+  const { data: sessions, isError: isSessionsError, refetch: refetchSessions } = useSessions()
   const { mutate: createSession } = useCreateSession()
   const { mutate: deleteSession } = useDeleteSession()
 
@@ -68,65 +63,58 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     if (sessionId === id) navigate('/chat')
   }
 
-  const handleLogout = async () => {
-    try {
-      await axios.post(`${API_BASE_URL}/api/v1/auth/logout`, {}, { withCredentials: true })
-    } catch {}
-    setAccessToken(null)
-    navigate('/login', { replace: true })
-  }
+  const groups = groupSessions(sessions ?? [])
 
   return (
-    <SidebarProvider open={open} onOpenChange={setOpen} className="h-dvh overflow-hidden">
-      <Sidebar collapsible="icon">
-        <SidebarHeader>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton size="lg" asChild>
-                <Link to="/documents" onClick={(e) => e.stopPropagation()}>
-                  <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                    <Brain className="size-4" />
-                  </div>
-                  <span className="font-semibold">Memex</span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
+    <SidebarProvider className="h-dvh overflow-hidden">
+      <Sidebar collapsible="none" className="border-r-0">
+        <SidebarHeader className="px-4 pt-[18px] pb-3">
+          <Link to="/chat" className="flex items-center gap-[9px]">
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-[7px] bg-invert-bg font-heading text-[15px] leading-none text-invert-foreground">
+              M
+            </span>
+            <span className="text-sm font-semibold tracking-[-0.01em]">Memex</span>
+          </Link>
         </SidebarHeader>
 
-        <SidebarContent>
-          <SidebarMenu className="px-2 mt-2">
-            {nav.map(({ to, icon: Icon, label }) => (
-              <SidebarMenuItem key={to}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={location.pathname.startsWith(to)}
-                  tooltip={label}
-                >
-                  <Link to={to} onClick={(e) => e.stopPropagation()}>
-                    <Icon />
-                    <span>{label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
+        <SidebarContent className="gap-0">
+          <SidebarMenu className="px-2 gap-px">
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                onClick={handleNewChat}
+                className="h-[34px] gap-2.5 rounded-[9px] px-2 text-[13.5px] text-foreground hover:bg-accent"
+              >
+                <Plus className="size-4" strokeWidth={1.8} />
+                Новый чат
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            {nav.map(({ to, icon: Icon, label }) => {
+              const isActive = location.pathname.startsWith(to)
+              return (
+                <SidebarMenuItem key={to}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={isActive}
+                    className="h-[34px] gap-2.5 rounded-[9px] px-2 text-[13.5px] text-muted-foreground hover:bg-accent hover:text-foreground data-[active=true]:bg-accent data-[active=true]:font-medium data-[active=true]:text-foreground"
+                  >
+                    <Link to={to}>
+                      <Icon className="size-4" strokeWidth={1.8} />
+                      <span>{label}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )
+            })}
           </SidebarMenu>
 
-          {isChatSection && (
-            <div className="flex flex-col flex-1 min-h-0 mt-2 px-2 gap-1 group-data-[collapsible=icon]:hidden">
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-2 rounded-lg mb-1"
-                onClick={handleNewChat}
-              >
-                <PlusCircle className="size-4" />
-                Новый чат
-              </Button>
-              <div className="flex-1 min-h-0 overflow-auto flex flex-col gap-1">
-                {isSessionsError ? (
-                  <ErrorState message="Не удалось загрузить чаты" onRetry={() => refetchSessions()} />
-                ) : (
-                  sessions?.map((session) => (
+          <div className="flex flex-1 min-h-0 flex-col gap-px overflow-y-auto px-2 pt-4 pb-2">
+            {isSessionsError ? (
+              <ErrorState message="Не удалось загрузить чаты" onRetry={() => refetchSessions()} />
+            ) : (
+              groups.map((group) => (
+                <div key={group.label}>
+                  <div className="px-2 pt-3 pb-[5px] text-[11.5px] text-faint-foreground">{group.label}</div>
+                  {group.items.map((session) => (
                     <SessionListItem
                       key={session.id}
                       session={session}
@@ -134,67 +122,32 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                       onSelect={handleSelectSession}
                       onDelete={handleDeleteSession}
                     />
-                  ))
-                )}
-              </div>
-            </div>
-          )}
+                  ))}
+                </div>
+              ))
+            )}
+          </div>
         </SidebarContent>
 
-        <SidebarFooter>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton size="lg">
-                    <Avatar className="size-8 rounded-lg">
-                      <AvatarFallback className="rounded-lg">
-                        {me?.name?.charAt(0).toUpperCase() ?? 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                      <span className="truncate font-medium">{me?.name ?? 'Аккаунт'}</span>
-                      <span className="truncate text-xs text-muted-foreground">{me?.email ?? ''}</span>
-                    </div>
-                  </SidebarMenuButton>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent side="top" align="start" className="w-48">
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>
-                      {theme === 'dark' ? <Moon className="size-4" /> : theme === 'light' ? <Sun className="size-4" /> : <Monitor className="size-4" />}
-                      <span>Тема</span>
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
-                      <DropdownMenuItem onClick={() => setTheme('light')}>
-                        <Sun className="size-4" /> Светлая
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTheme('dark')}>
-                        <Moon className="size-4" /> Тёмная
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setTheme('system')}>
-                        <Monitor className="size-4" /> Системная
-                      </DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-                    <LogOut className="size-4" />
-                    <span>Выйти</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </SidebarMenuItem>
-          </SidebarMenu>
+        <SidebarFooter className="flex-row items-center gap-2 p-2">
+          <Link
+            to="/settings"
+            className="flex h-[38px] min-w-0 flex-1 items-center gap-[9px] rounded-[9px] px-2 hover:bg-accent"
+          >
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-accent text-[11px] font-semibold">
+              {me?.name?.charAt(0).toUpperCase() ?? 'U'}
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-[12.5px] font-medium">{me?.name ?? 'Аккаунт'}</span>
+              <span className="block truncate text-[11px] text-faint-foreground">{me?.email ?? ''}</span>
+            </span>
+          </Link>
+          <ThemeToggle className="size-[30px] shrink-0 rounded-[9px] text-faint-foreground hover:bg-accent hover:text-foreground" />
         </SidebarFooter>
       </Sidebar>
 
-      <div className="flex flex-col flex-1 min-w-0 min-h-0">
-        <header className="flex h-12 items-center border-b px-4 shrink-0">
-          <SidebarTrigger />
-        </header>
-        <main className="flex-1 min-h-0 overflow-auto">
-          {children}
-        </main>
+      <div className="flex flex-1 min-w-0 flex-col min-h-0 bg-background">
+        {children}
       </div>
     </SidebarProvider>
   )

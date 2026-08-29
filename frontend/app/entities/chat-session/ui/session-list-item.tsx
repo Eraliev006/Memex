@@ -1,9 +1,15 @@
-import { memo } from 'react'
-import { Trash2 } from 'lucide-react'
+import { memo, useState } from 'react'
+import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
 import { cn } from '~/shared/lib/utils'
 import { Button } from '~/shared/ui/button'
 import { formatRelativeTime } from '~/shared/lib/format-relative-time'
 import type { ChatSessionResponse } from '~/shared/api/generated/model'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '~/shared/ui/dropdown-menu'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,7 +19,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '~/shared/ui/alert-dialog'
 
 interface SessionListItemProps {
@@ -24,35 +29,59 @@ interface SessionListItemProps {
 }
 
 export const SessionListItem = memo(function SessionListItem({ session, isActive, onSelect, onDelete }: SessionListItemProps) {
+  const [confirmOpen, setConfirmOpen] = useState(false)
+
   return (
     <div
       className={cn(
-        'group flex items-center justify-between gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-colors hover:bg-muted',
-        isActive && 'bg-muted'
+        'group flex items-center gap-2 h-8 px-2 rounded-[9px] cursor-pointer transition-colors hover:bg-accent',
+        isActive && 'bg-accent'
       )}
       onClick={() => onSelect(session.id)}
     >
-      <div className="min-w-0 flex-1">
-        <p className={cn('text-[13px] truncate', isActive ? 'font-semibold' : 'font-medium')}>
-          {session.title || 'Новый чат'}
-        </p>
-        <p className="text-[11px] text-faint-foreground">
-          {session.last_message_at ? formatRelativeTime(session.last_message_at) : formatRelativeTime(session.created_at)}
-        </p>
-      </div>
+      <span
+        className={cn(
+          'flex-1 min-w-0 truncate text-[13px]',
+          isActive ? 'font-medium text-foreground' : 'text-muted-foreground'
+        )}
+      >
+        {session.title || 'Новый чат'}
+      </span>
+      <span className="shrink-0 text-[11px] text-faint-foreground group-hover:hidden">
+        {session.last_message_at ? formatRelativeTime(session.last_message_at) : formatRelativeTime(session.created_at)}
+      </span>
 
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
             size="icon"
-            className="size-7 opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+            className="hidden group-hover:flex size-6 shrink-0"
             onClick={(e) => e.stopPropagation()}
           >
-            <Trash2 className="size-3.5 text-destructive" />
+            <MoreHorizontal className="size-3.5" />
           </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+          <DropdownMenuItem disabled>
+            <Pencil className="size-3.5" />
+            Переименовать
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            variant="destructive"
+            onSelect={(e) => {
+              e.preventDefault()
+              setConfirmOpen(true)
+            }}
+          >
+            <Trash2 className="size-3.5" />
+            Удалить
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
           <AlertDialogHeader>
             <AlertDialogTitle>Удалить чат?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -60,15 +89,10 @@ export const SessionListItem = memo(function SessionListItem({ session, isActive
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={(e) => e.stopPropagation()}>
-              Отмена
-            </AlertDialogCancel>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={(e) => {
-                e.stopPropagation()
-                onDelete(session.id)
-              }}
+              onClick={() => onDelete(session.id)}
             >
               Удалить
             </AlertDialogAction>
