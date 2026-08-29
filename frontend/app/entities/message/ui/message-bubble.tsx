@@ -18,10 +18,6 @@ import { useIsMobile } from '~/shared/lib/hooks/use-mobile'
 // (важно: это чужой пользовательский контент, а не наш собственный markdown)
 const sourcePlugins = [rehypeRaw, rehypeSanitize]
 
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-}
-
 interface Source {
   document_title?: string
   text: string
@@ -41,54 +37,40 @@ export const MessageBubble = memo(function MessageBubble({ message }: MessageBub
 
   if (message.role === 'tool' || message.role === 'system') return null
 
-  return (
-    <div className={cn('flex gap-3', isUser && 'flex-row-reverse')}>
-      <div
-        className={cn(
-          'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium',
-          isUser ? 'bg-invert-bg text-invert-foreground' : 'bg-muted text-muted-foreground'
-        )}
-      >
-        {isUser ? 'U' : 'AI'}
-      </div>
-
-      <div className={cn('flex flex-col gap-2', isUser ? 'items-end' : 'items-start', 'max-w-[80%]')}>
-        <div
-          className={cn(
-            'rounded-2xl px-4 py-3 text-sm',
-            isUser
-              ? 'bg-invert-bg text-invert-foreground rounded-tr-sm'
-              : 'bg-muted text-foreground rounded-tl-sm'
-          )}
-        >
-          {isUser ? (
-            <p className="whitespace-pre-wrap break-words">{message.content}</p>
-          ) : (
-            <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2">
-              {/* без rehypeRaw: это ответ модели, а не наш документ — рендерить
-                  в нём сырой HTML небезопасно (модель могла нахвататься его из
-                  чужих загруженных документов через RAG-контекст) */}
-              <ReactMarkdown>{message.content}</ReactMarkdown>
-            </div>
-          )}
+  if (isUser) {
+    return (
+      <div className="flex justify-end">
+        <div className="max-w-[80%] rounded-[18px] bg-secondary px-[15px] py-2.5 text-sm leading-[1.55]">
+          <p className="whitespace-pre-wrap break-words">{message.content}</p>
         </div>
-
-        {!isUser && sources && sources.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {sources.map((source, i) => (
-              <button
-                key={i}
-                onClick={() => setSelectedSource(source)}
-                className="flex items-center gap-1.5 text-[11.5px] px-2.5 py-1 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors whitespace-nowrap"
-              >
-                <FileText className="size-3" />
-                {source.document_title || 'Документ'}
-                {source.chunk_index != null && ` · чанк ${source.chunk_index}`}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col gap-3.5">
+      <div className="text-[14.5px] leading-[1.72] text-foreground prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2">
+        {/* без rehypeRaw: это ответ модели, а не наш документ — рендерить
+            в нём сырой HTML небезопасно (модель могла нахвататься его из
+            чужих загруженных документов через RAG-контекст) */}
+        <ReactMarkdown>{message.content}</ReactMarkdown>
+      </div>
+
+      {sources && sources.length > 0 && (
+        <div className="flex flex-wrap gap-3.5 text-xs text-faint-foreground">
+          {sources.map((source, i) => (
+            <button
+              key={i}
+              onClick={() => setSelectedSource(source)}
+              className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+            >
+              <FileText className="size-3" strokeWidth={1.8} />
+              {source.document_title || 'Документ'}
+              {source.chunk_index != null && ` · чанк ${source.chunk_index}`}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Source detail sheet: снизу на мобильных (полная ширина, удобно
           дотягиваться большим пальцем), справа и шире на десктопе для
