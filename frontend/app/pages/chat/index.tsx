@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, type KeyboardEvent } from 'react'
 import { useParams } from 'react-router'
-import { Send } from 'lucide-react'
+import { ArrowUp, MoreHorizontal } from 'lucide-react'
 import { Button } from '~/shared/ui/button'
 import { useSessions } from '~/entities/chat-session/model/use-sessions'
 import { useMessages } from '~/entities/message/model/use-messages'
@@ -11,18 +11,19 @@ import { cn } from '~/shared/lib/utils'
 import { useQueryClient } from '@tanstack/react-query'
 import { ChatRequestSearchScope } from '~/shared/api/generated/model/chatRequestSearchScope'
 
-const SEARCH_SCOPE_OPTIONS: { value: ChatRequestSearchScope; label: string }[] = [
-  { value: ChatRequestSearchScope.docs, label: 'Документы' },
-  { value: ChatRequestSearchScope.web, label: 'Веб' },
-  { value: ChatRequestSearchScope.both, label: 'Оба' },
+const PROMPTS = [
+  'Что мы решили по срокам релиза?',
+  'Собери список рисков из всех документов',
+  'О чём этот документ, кратко?',
+  'Какие вопросы чаще всего поднимались?',
 ]
 
 export function ChatPage() {
   const { sessionId } = useParams<{ sessionId?: string }>()
   const activeSessionId = sessionId ?? null
   const [input, setInput] = useState('')
-  const [searchScope, setSearchScope] = useState<ChatRequestSearchScope>(ChatRequestSearchScope.docs)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const { data: sessions } = useSessions()
   const { data: messages, isLoading: isMessagesLoading, isError: isMessagesError, refetch: refetchMessages } = useMessages(activeSessionId)
@@ -34,6 +35,13 @@ export function ChatPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, streamingText])
 
+  useEffect(() => {
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`
+  }, [input])
+
   const queryClient = useQueryClient()
 
   const [optimisticMessage, setOptimisticMessage] = useState<string | null>(null)
@@ -44,9 +52,11 @@ export function ChatPage() {
     setOptimisticMessage(message) // показываем сразу
     setSendFailed(false)
 
+    // всегда 'both' — агент сам решает, звать ли qdrant_search/web_search
+    // (tool_choice="auto" на бэке), в композере выбора нет намеренно
     const ok = await start(`/api/v1/chat/${activeSessionId}/message`, {
       message,
-      search_scope: searchScope,
+      search_scope: ChatRequestSearchScope.both,
     })
 
     if (ok) {
@@ -91,93 +101,116 @@ export function ChatPage() {
     )
   }
 
-  return (
-    <div className="flex flex-col h-full min-h-0">
-      {activeSessionTitle && (
-        <div className="flex items-center px-4 sm:px-7 py-4 border-b shrink-0">
-          <span className="text-[14.5px] font-semibold truncate">{activeSessionTitle}</span>
-        </div>
-      )}
-      <div className="flex-1 min-h-0 overflow-auto p-4 sm:p-6 flex flex-col gap-4 max-w-[760px] w-full mx-auto">
-        {isMessagesError ? (
-          <ErrorState message="Не удалось загрузить сообщения" onRetry={() => refetchMessages()} />
-        ) : isMessagesLoading ? (
-          <div className="flex flex-col gap-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-16 rounded-2xl bg-muted animate-pulse" />
+  const hasThread = isMessagesLoading || !!messages?.length || !!optimisticMessage || isStreaming
+
+  if (!hasThread) {
+    return (
+      <div className="flex flex-1 min-h-0 flex-col items-center justify-center overflow-y-auto px-[22px] py-10">
+        <div className="flex w-full max-w-[620px] flex-col gap-[26px]">
+          <h1 className="font-heading text-[34px] font-normal leading-[1.2] tracking-[-0.01em] text-foreground">
+            Что найдём?
+          </h1>
+
+          <div className="flex items-end gap-2 rounded-[22px] border border-border pl-4 pr-1.5 py-1.5">
+            <textarea
+              className="min-w-0 flex-1 resize-none border-none bg-transparent py-[11px] text-sm leading-[1.5] outline-none"
+              placeholder="Спросите о своих документах"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              rows={2}
+            />
+            <Button
+              size="icon"
+              className="size-8 shrink-0 rounded-full bg-invert-bg text-invert-foreground hover:opacity-85"
+              onClick={handleSend}
+              disabled={!input.trim()}
+            >
+              <ArrowUp className="size-[15px]" strokeWidth={2.2} />
+            </Button>
+          </div>
+
+          <div className="flex flex-col">
+            {PROMPTS.map((text) => (
+              <button
+                key={text}
+                onClick={() => setInput(text)}
+                className="border-b border-border py-3 px-1 text-left text-[13.5px] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {text}
+              </button>
             ))}
           </div>
-        ) : (
-          messages?.map((message) => (
-            <MessageBubble key={message.id} message={message} />
-          ))
-        )}
-        {optimisticMessage && (
-          <div className="flex flex-col gap-1 items-end">
-            <div className="flex gap-3 flex-row-reverse">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium bg-invert-bg text-invert-foreground">
-                U
-              </div>
-              <div className="max-w-[85%] sm:max-w-[80%] rounded-2xl px-4 py-3 text-sm bg-invert-bg text-invert-foreground rounded-tr-sm">
-                <p className="whitespace-pre-wrap break-words">{optimisticMessage}</p>
-              </div>
-            </div>
-            {sendFailed && (
-              <div className="flex items-center gap-2 pr-11 text-xs text-destructive">
-                <span>Не удалось отправить</span>
-                <button type="button" className="underline hover:no-underline" onClick={handleRetrySend}>
-                  Повторить
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-        {isStreaming && !streamingText && (
-          <div className="flex items-center gap-2 text-muted-foreground text-[13px]">
-            <span className="size-1.5 rounded-full bg-primary animate-pulse" />
-            Агент печатает…
-          </div>
-        )}
-        {isStreaming && streamingText && (
-          <div className="flex gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium bg-muted text-muted-foreground">
-              AI
-            </div>
-            <div className="max-w-[85%] sm:max-w-[80%] rounded-2xl px-4 py-3 text-sm bg-muted text-foreground rounded-tl-sm">
-              <p className="whitespace-pre-wrap break-words">{streamingText}</p>
-              <span className="inline-block w-1.5 h-4 bg-current ml-0.5 animate-pulse" />
-            </div>
-          </div>
-        )}
-        <div ref={messagesEndRef} />
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col h-full min-h-0">
+      <div className="flex h-[52px] shrink-0 items-center gap-2.5 px-[22px]">
+        <span className="min-w-0 flex-1 truncate text-[13px] text-muted-foreground">
+          {activeSessionTitle}
+        </span>
+        <button className="flex size-7 shrink-0 items-center justify-center rounded-lg text-faint-foreground hover:bg-accent hover:text-foreground transition-colors">
+          <MoreHorizontal className="size-4" />
+        </button>
       </div>
 
-      <div className="p-4 sm:px-6 sm:pb-6 sm:pt-4.5 max-w-[760px] w-full mx-auto">
-        <div className="flex gap-1 mb-2">
-          {SEARCH_SCOPE_OPTIONS.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => setSearchScope(option.value)}
-              disabled={isStreaming}
-              className={cn(
-                'rounded-full px-3 py-1 text-xs font-medium transition-colors disabled:pointer-events-none disabled:opacity-50',
-                searchScope === option.value
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:text-foreground'
+      <div className="flex-1 min-h-0 overflow-auto">
+        <div className="flex flex-col gap-8 max-w-[680px] w-full mx-auto px-[22px] pt-4 pb-2">
+          {isMessagesError ? (
+            <ErrorState message="Не удалось загрузить сообщения" onRetry={() => refetchMessages()} />
+          ) : isMessagesLoading ? (
+            <div className="flex flex-col gap-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-16 rounded-2xl bg-muted animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            messages?.map((message) => (
+              <MessageBubble key={message.id} message={message} />
+            ))
+          )}
+          {optimisticMessage && (
+            <div className="flex flex-col gap-1.5 items-end">
+              <div className="max-w-[80%] rounded-[18px] bg-secondary px-[15px] py-2.5 text-sm leading-[1.55]">
+                <p className="whitespace-pre-wrap break-words">{optimisticMessage}</p>
+              </div>
+              {sendFailed && (
+                <div className="flex items-center gap-2 text-xs text-faint-foreground">
+                  <span>Не удалось отправить</span>
+                  <button type="button" className="underline hover:no-underline hover:text-foreground" onClick={handleRetrySend}>
+                    Повторить
+                  </button>
+                </div>
               )}
-            >
-              {option.label}
-            </button>
-          ))}
+            </div>
+          )}
+          {isStreaming && !streamingText && (
+            <div className="text-[13.5px] text-faint-foreground animate-pulse">
+              Ищу в документах…
+            </div>
+          )}
+          {isStreaming && streamingText && (
+            <div className="text-[14.5px] leading-[1.72] text-foreground whitespace-pre-wrap break-words">
+              {streamingText}
+              <span className="inline-block w-1.5 h-4 bg-current ml-0.5 align-middle animate-pulse" />
+            </div>
+          )}
+          <div ref={messagesEndRef} />
         </div>
-        <div className="flex gap-2.5 items-end border rounded-2xl pl-4 pr-2 py-2">
+      </div>
+
+      <div className="shrink-0 px-[22px] pt-2 pb-6">
+        <div className="flex items-end gap-2 max-w-[680px] w-full mx-auto rounded-[22px] border border-border bg-background pl-4 pr-1.5 py-1.5">
           <textarea
+            ref={textareaRef}
             className={cn(
-              'flex-1 resize-none border-none bg-transparent px-0 py-2 text-sm outline-none',
-              'min-h-[24px] max-h-32'
+              'min-w-0 flex-1 resize-none border-none bg-transparent py-[11px] text-sm leading-[1.5] outline-none',
+              'max-h-[120px]'
             )}
-            placeholder="Спросите что-нибудь о ваших документах…"
+            placeholder="Спросите о своих документах"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -186,11 +219,11 @@ export function ChatPage() {
           />
           <Button
             size="icon"
-            className="size-9.5 rounded-[10px] shrink-0"
+            className="size-8 shrink-0 rounded-full bg-invert-bg text-invert-foreground hover:opacity-85"
             onClick={handleSend}
             disabled={!input.trim() || isStreaming}
           >
-            <Send className="size-4" />
+            <ArrowUp className="size-[15px]" strokeWidth={2.2} />
           </Button>
         </div>
       </div>

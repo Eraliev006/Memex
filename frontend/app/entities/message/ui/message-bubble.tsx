@@ -19,11 +19,15 @@ import { useIsMobile } from '~/shared/lib/hooks/use-mobile'
 // (важно: это чужой пользовательский контент, а не наш собственный markdown)
 const sourcePlugins = [rehypeRaw, rehypeSanitize]
 
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
-}
-
 type Source = DocsSource | WebSource
+
+function getDomain(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return url
+  }
+}
 
 interface MessageBubbleProps {
   message: MessageResponse
@@ -38,65 +42,62 @@ export const MessageBubble = memo(function MessageBubble({ message }: MessageBub
 
   if (message.role === 'tool' || message.role === 'system') return null
 
-  return (
-    <div className={cn('flex gap-3', isUser && 'flex-row-reverse')}>
-      <div
-        className={cn(
-          'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium',
-          isUser ? 'bg-invert-bg text-invert-foreground' : 'bg-muted text-muted-foreground'
-        )}
-      >
-        {isUser ? 'U' : 'AI'}
+  if (isUser) {
+    return (
+      <div className="flex justify-end">
+        <div className="max-w-[80%] rounded-[18px] bg-secondary px-[15px] py-2.5 text-sm leading-[1.55]">
+          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+        </div>
       </div>
+    )
+  }
 
-      <div className={cn('flex flex-col gap-2', isUser ? 'items-end' : 'items-start', 'max-w-[80%]')}>
-        <div
-          className={cn(
-            'rounded-2xl px-4 py-3 text-sm',
-            isUser
-              ? 'bg-invert-bg text-invert-foreground rounded-tr-sm'
-              : 'bg-muted text-foreground rounded-tl-sm'
-          )}
-        >
-          {isUser ? (
-            <p className="whitespace-pre-wrap break-words">{message.content}</p>
-          ) : isFailed && !message.content ? (
-            <p className="flex items-center gap-1.5 text-destructive">
-              <TriangleAlert className="size-3.5 shrink-0" />
-              Не удалось получить ответ. Попробуйте ещё раз.
+  return (
+    <div className="flex flex-col gap-3.5">
+      {isFailed && !message.content ? (
+        <p className="flex items-center gap-1.5 text-sm text-destructive">
+          <TriangleAlert className="size-3.5 shrink-0" />
+          Не удалось получить ответ. Попробуйте ещё раз.
+        </p>
+      ) : (
+        <div className="text-[14.5px] leading-[1.72] text-foreground prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2">
+          {/* без rehypeRaw: это ответ модели, а не наш документ — рендерить
+              в нём сырой HTML небезопасно (модель могла нахвататься его из
+              чужих загруженных документов через RAG-контекст) */}
+          <ReactMarkdown>{message.content}</ReactMarkdown>
+          {isFailed && (
+            <p className="flex items-center gap-1.5 text-xs text-destructive mt-1">
+              <TriangleAlert className="size-3 shrink-0" />
+              Ответ прерван из-за ошибки
             </p>
-          ) : (
-            <div className="prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-headings:my-2">
-              {/* без rehypeRaw: это ответ модели, а не наш документ — рендерить
-                  в нём сырой HTML небезопасно (модель могла нахвататься его из
-                  чужих загруженных документов через RAG-контекст) */}
-              <ReactMarkdown>{message.content}</ReactMarkdown>
-              {isFailed && (
-                <p className="flex items-center gap-1.5 text-xs text-destructive mt-1">
-                  <TriangleAlert className="size-3 shrink-0" />
-                  Ответ прерван из-за ошибки
-                </p>
-              )}
-            </div>
           )}
         </div>
+      )}
 
-        {!isUser && sources && sources.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {sources.map((source, i) => (
-              <button
-                key={i}
-                onClick={() => setSelectedSource(source)}
-                className="flex items-center gap-1.5 text-[11.5px] px-2.5 py-1 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors whitespace-nowrap"
-              >
-                {source.source === 'web' ? <Globe className="size-3" /> : <FileText className="size-3" />}
-                {source.title || 'Документ'}
-                {source.source === 'docs' && source.page != null && ` · стр. ${source.page}`}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      {sources && sources.length > 0 && (
+        <div className="flex flex-wrap gap-3.5 text-xs text-faint-foreground">
+          {sources.map((source, i) => (
+            <button
+              key={i}
+              onClick={() => setSelectedSource(source)}
+              className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+            >
+              {source.source === 'web' ? (
+                <>
+                  <Globe className="size-3" strokeWidth={1.8} />
+                  {getDomain(source.url)}
+                </>
+              ) : (
+                <>
+                  <FileText className="size-3" strokeWidth={1.8} />
+                  {source.title || 'Документ'}
+                  {source.page != null && ` · с. ${source.page}`}
+                </>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Source detail sheet: снизу на мобильных (полная ширина, удобно
           дотягиваться большим пальцем), справа и шире на десктопе для

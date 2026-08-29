@@ -8,20 +8,14 @@ import {
   DropdownMenuTrigger,
 } from '~/shared/ui/dropdown-menu'
 
-export function ThemeToggle() {
-  const { theme, setTheme } = useTheme()
+export function ThemeToggle({ className }: { className?: string }) {
+  const { setTheme } = useTheme()
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon">
-          {theme === 'dark' ? (
-            <Moon className="size-4" />
-          ) : theme === 'light' ? (
-            <Sun className="size-4" />
-          ) : (
-            <Monitor className="size-4" />
-          )}
+        <Button variant="ghost" size="icon" className={className} title="Тема">
+          <Moon className="size-[15px]" strokeWidth={1.8} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
